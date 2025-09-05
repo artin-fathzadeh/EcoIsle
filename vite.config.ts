@@ -19,4 +19,7 @@ export default defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ['leaflet'],
   },
+  build: {
+    outDir: 'build',
+  },
 }));
