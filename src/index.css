@@ -1,0 +1,166 @@
+@import 'leaflet/dist/leaflet.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Glass Morphism Base Colors */
+  --background: 220 15% 8%;
+  --foreground: 220 8% 95%;
+  
+  /* Primary - Professional Blue */
+  --primary: 210 100% 50%;
+  --primary-foreground: 210 40% 98%;
+  --primary-glow: 210 80% 60%;
+  
+  /* Secondary - Neutral Gray */
+  --secondary: 220 14% 15%;
+  --secondary-foreground: 220 8% 95%;
+  
+  /* Accent - Subtle Accent */
+  --accent: 220 20% 12%;
+  --accent-foreground: 220 8% 95%;
+  
+  /* Glass Effects */
+  --glass-bg: 220 15% 12%;
+  --glass-border: 220 20% 20%;
+  --glass-blur: blur(20px);
+  
+  /* Neutral Colors */
+  --muted: 220 14% 18%;
+  --muted-foreground: 220 8% 65%;
+  
+  --card: 220 15% 10%;
+  --card-foreground: 220 8% 90%;
+  
+  --popover: 220 15% 10%;
+  --popover-foreground: 220 8% 90%;
+  
+  --border: 220 20% 18%;
+  --input: 220 15% 12%;
+  --ring: 210 100% 50%;
+  
+  /* Status Colors */
+  --destructive: 0 62% 50%;
+  --destructive-foreground: 210 40% 98%;
+  
+  /* Ecosystem Score Colors */
+  --eco-excellent: 120 60% 50%;
+  --eco-good: 80 60% 50%;
+  --eco-warning: 45 100% 50%;
+  --eco-critical: 0 70% 50%;
+  
+  /* Sidebar */
+  --sidebar-background: 220 15% 6%;
+  --sidebar-foreground: 220 8% 90%;
+  --sidebar-primary: 210 100% 50%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 220 20% 12%;
+  --sidebar-accent-foreground: 220 8% 90%;
+  --sidebar-border: 220 20% 18%;
+  --sidebar-ring: 210 100% 50%;
+  
+  /* Design System */
+  --radius: 8px;
+  
+  /* Glass Gradients */
+  --gradient-glass: linear-gradient(135deg, 
+    hsla(var(--glass-bg), 0.8) 0%, 
+    hsla(var(--glass-bg), 0.4) 100%);
+  --gradient-glass-border: linear-gradient(135deg, 
+    hsla(var(--glass-border), 0.8) 0%, 
+    hsla(var(--glass-border), 0.2) 100%);
+  
+  /* Minimal Shadows */
+  --shadow-glass: 0 8px 32px hsla(0, 0%, 0%, 0.1);
+  --shadow-float: 0 4px 16px hsla(0, 0%, 0%, 0.1);
+}
+
+/* Glass Morphism Components */
+.glass {
+  background: var(--gradient-glass);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid hsla(var(--glass-border), 0.2);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-float {
+  background: hsla(var(--glass-bg), 0.9);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid hsla(var(--glass-border), 0.3);
+  box-shadow: var(--shadow-float);
+}
+
+/* Professional Transitions */
+.transition-glass {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Remove all animations for minimal design */
+* {
+  animation: none !important;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-gradient-to-br from-background to-accent/10 text-foreground antialiased;
+    background-attachment: fixed;
+  }
+
+  /* Custom Ecosystem Elements */
+  .eco-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .eco-transition {
+    transition: var(--transition-smooth);
+  }
+
+  .eco-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  /* Country Selection Effects */
+  .country-hover {
+    @apply transform transition-all duration-300 hover:scale-105 cursor-pointer;
+    filter: drop-shadow(0 4px 8px hsl(var(--primary) / 0.2));
+  }
+
+  .country-selected {
+    @apply animate-pulse;
+    filter: drop-shadow(0 8px 16px hsl(var(--primary-glow) / 0.4));
+  }
+
+  /* Ecosystem Score Animations */
+  .score-pulse {
+    animation: score-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes score-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+
+  /* Slider Track Animations */
+  .slider-track {
+    @apply bg-gradient-to-r from-muted via-accent to-primary rounded-full;
+    background-size: 200% 100%;
+    animation: slide-gradient 3s ease-in-out infinite;
+  }
+
+  @keyframes slide-gradient {
+    0%, 100% { background-position: 200% 0; }
+    50% { background-position: 0% 0; }
+  }
+}
