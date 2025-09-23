@@ -9,12 +9,17 @@ import FallbackWorldMap from "./components/game/FallbackWorldMap";
 import CountrySelector from "./components/game/CountrySelector";
 import EcosystemControls from "./components/game/EcosystemControls";
 import EcoScore from "./components/game/EcoScore";
+import EducationalEcoScore from "./components/game/EducationalEcoScore";
 import Assistant from "./components/game/Assistant";
 import VisualFeedback from "./components/game/VisualFeedback";
+import IntroBot from "./components/game/IntroBot";
+import CardGameInterface from "./components/game/CardGameInterface";
+import GameModeSelector from "./components/game/GameModeSelector";
 
 // Import stores
 import { useGame } from "./lib/stores/useGame";
 import { useCountries } from "./lib/stores/useCountries";
+import { useCardGame } from "./lib/stores/useCardGame";
 
 
 // Define control keys for the game
@@ -31,6 +36,7 @@ const controls = [
 function App() {
   const { phase } = useGame();
   const { selectedCountry } = useCountries();
+  const { gameMode } = useCardGame();
   const [showCanvas, setShowCanvas] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
 
@@ -96,10 +102,28 @@ function App() {
             {/* Game UI when country is selected */}
             {selectedCountry && (
               <>
-                <EcoScore />
-                <EcosystemControls />
-                <VisualFeedback />
-                <Assistant />
+                {/* Game mode selector */}
+                <GameModeSelector />
+                
+                {/* Intro bot tutorial */}
+                <IntroBot />
+                
+                {/* Score display - use educational version for education mode */}
+                {gameMode === 'education' ? <EducationalEcoScore /> : <EcoScore />}
+                
+                {/* Controls and UI based on game mode */}
+                {gameMode === 'education' && (
+                  <>
+                    <EcosystemControls />
+                    <VisualFeedback />
+                    <Assistant />
+                  </>
+                )}
+                
+                {/* Card game interface for card modes */}
+                {(gameMode === 'cards' || gameMode === 'endless') && (
+                  <CardGameInterface />
+                )}
               </>
             )}
           </div>
