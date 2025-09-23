@@ -11,7 +11,8 @@ import {
   X,
   Gamepad2,
   GraduationCap,
-  Zap
+  Zap,
+  Crown
 } from "lucide-react";
 
 interface GameModeOption {
@@ -60,6 +61,19 @@ const gameModeOptions: GameModeOption[] = [
       'High score tracking',
       'All cards unlocked',
       'Disaster intensity multipliers'
+    ]
+  },
+  {
+    mode: 'gorilla',
+    name: '100 Men vs 1 Gorilla',
+    description: 'Epic battle mode where one mighty gorilla faces human civilization',
+    icon: Crown,
+    features: [
+      'Real-time battle system',
+      'Dynamic population tracking',
+      'Special gorilla abilities',
+      'Random ecosystem events',
+      'Epic victory conditions'
     ]
   }
 ];
@@ -177,6 +191,7 @@ export default function GameModeSelector() {
                   {selectedMode === 'cards' && ' Disaster cards will have location-specific effects!'}
                   {selectedMode === 'endless' && ' Perfect for testing your skills against ' + selectedCountry + "'s toughest scenarios!"}
                   {selectedMode === 'education' && ' Learn about ' + selectedCountry + "'s specific ecological factors."}
+                  {selectedMode === 'gorilla' && ' Can one mighty gorilla restore balance in ' + selectedCountry + '?'}
                 </p>
               </div>
               

@@ -2,6 +2,8 @@ import { Canvas } from "@react-three/fiber";
 import React, { Suspense, useEffect, useState } from "react";
 import { KeyboardControls } from "@react-three/drei";
 import "@fontsource/inter";
+import { Button } from "./components/ui/button";
+import { Trophy } from "lucide-react";
 
 // Import game components
 import WorldMap from "./components/game/WorldMap";
@@ -15,6 +17,8 @@ import VisualFeedback from "./components/game/VisualFeedback";
 import IntroBot from "./components/game/IntroBot";
 import CardGameInterface from "./components/game/CardGameInterface";
 import GameModeSelector from "./components/game/GameModeSelector";
+import GorillaMode from "./components/game/GorillaMode";
+import Leaderboard from "./components/game/Leaderboard";
 
 // Import stores
 import { useGame } from "./lib/stores/useGame";
@@ -39,6 +43,7 @@ function App() {
   const { gameMode } = useCardGame();
   const [showCanvas, setShowCanvas] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // Check WebGL support and show the canvas once everything is loaded
   useEffect(() => {
@@ -105,6 +110,17 @@ function App() {
                 {/* Game mode selector */}
                 <GameModeSelector />
                 
+                {/* Leaderboard button */}
+                <div className="absolute top-4 right-20 pointer-events-auto">
+                  <Button
+                    onClick={() => setShowLeaderboard(true)}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    Leaderboard
+                  </Button>
+                </div>
+                
                 {/* Intro bot tutorial */}
                 <IntroBot />
                 
@@ -124,6 +140,17 @@ function App() {
                 {(gameMode === 'cards' || gameMode === 'endless') && (
                   <CardGameInterface />
                 )}
+                
+                {/* Gorilla mode interface */}
+                {gameMode === 'gorilla' && (
+                  <GorillaMode />
+                )}
+                
+                {/* Leaderboard Modal */}
+                <Leaderboard 
+                  isOpen={showLeaderboard} 
+                  onClose={() => setShowLeaderboard(false)} 
+                />
               </>
             )}
           </div>

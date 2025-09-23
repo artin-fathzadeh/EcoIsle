@@ -4,7 +4,7 @@ import { Card, buildDeckForLevel, shuffleDeck, DisasterCard, getDisasterMultipli
 import { useEcosystem } from "./useEcosystem";
 import { useCountries } from "./useCountries";
 
-export type GameMode = 'education' | 'cards' | 'endless';
+export type GameMode = 'education' | 'cards' | 'endless' | 'gorilla';
 
 interface Potion {
   id: string;
