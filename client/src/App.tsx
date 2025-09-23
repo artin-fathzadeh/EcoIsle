@@ -2,6 +2,8 @@ import { Canvas } from "@react-three/fiber";
 import React, { Suspense, useEffect, useState } from "react";
 import { KeyboardControls } from "@react-three/drei";
 import "@fontsource/inter";
+import { Button } from "./components/ui/button";
+import { Trophy } from "lucide-react";
 
 // Import game components
 import WorldMap from "./components/game/WorldMap";
@@ -9,12 +11,19 @@ import FallbackWorldMap from "./components/game/FallbackWorldMap";
 import CountrySelector from "./components/game/CountrySelector";
 import EcosystemControls from "./components/game/EcosystemControls";
 import EcoScore from "./components/game/EcoScore";
+import EducationalEcoScore from "./components/game/EducationalEcoScore";
 import Assistant from "./components/game/Assistant";
 import VisualFeedback from "./components/game/VisualFeedback";
+import IntroBot from "./components/game/IntroBot";
+import CardGameInterface from "./components/game/CardGameInterface";
+import GameModeSelector from "./components/game/GameModeSelector";
+import GorillaMode from "./components/game/GorillaMode";
+import Leaderboard from "./components/game/Leaderboard";
 
 // Import stores
 import { useGame } from "./lib/stores/useGame";
 import { useCountries } from "./lib/stores/useCountries";
+import { useCardGame } from "./lib/stores/useCardGame";
 
 
 // Define control keys for the game
@@ -31,8 +40,10 @@ const controls = [
 function App() {
   const { phase } = useGame();
   const { selectedCountry } = useCountries();
+  const { gameMode } = useCardGame();
   const [showCanvas, setShowCanvas] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   // Check WebGL support and show the canvas once everything is loaded
   useEffect(() => {
@@ -96,10 +107,50 @@ function App() {
             {/* Game UI when country is selected */}
             {selectedCountry && (
               <>
-                <EcoScore />
-                <EcosystemControls />
-                <VisualFeedback />
-                <Assistant />
+                {/* Game mode selector */}
+                <GameModeSelector />
+                
+                {/* Leaderboard button */}
+                <div className="absolute top-4 right-20 pointer-events-auto">
+                  <Button
+                    onClick={() => setShowLeaderboard(true)}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2"
+                  >
+                    <Trophy className="w-4 h-4" />
+                    Leaderboard
+                  </Button>
+                </div>
+                
+                {/* Intro bot tutorial */}
+                <IntroBot />
+                
+                {/* Score display - use educational version for education mode */}
+                {gameMode === 'education' ? <EducationalEcoScore /> : <EcoScore />}
+                
+                {/* Controls and UI based on game mode */}
+                {gameMode === 'education' && (
+                  <>
+                    <EcosystemControls />
+                    <VisualFeedback />
+                    <Assistant />
+                  </>
+                )}
+                
+                {/* Card game interface for card modes */}
+                {(gameMode === 'cards' || gameMode === 'endless') && (
+                  <CardGameInterface />
+                )}
+                
+                {/* Gorilla mode interface */}
+                {gameMode === 'gorilla' && (
+                  <GorillaMode />
+                )}
+                
+                {/* Leaderboard Modal */}
+                <Leaderboard 
+                  isOpen={showLeaderboard} 
+                  onClose={() => setShowLeaderboard(false)} 
+                />
               </>
             )}
           </div>
