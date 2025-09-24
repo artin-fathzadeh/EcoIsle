@@ -427,7 +427,7 @@ Remember: You are the EcoIsle Assistant, helping players learn about and manage 
           const toolNames = parsedTools.map(t => t.function?.name?.toLowerCase() || '').filter(Boolean);
           
           // Only remove inline patterns if they correspond to actual parsed tools
-          cleaned = cleaned.replace(inlineRegex, (match, funcName, args, reason) => {
+          cleaned = cleaned.replace(inlineRegex, (match: string, funcName: string, args: string, reason: string) => {
             const normalizedName = funcName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
             const mappedName = nameMap[normalizedName] || (
               normalizedName.includes('human') ? 'adjust_human_activity' :
