@@ -19,6 +19,7 @@ import CardGameInterface from "./components/game/CardGameInterface";
 import GameModeSelector from "./components/game/GameModeSelector";
 import GorillaMode from "./components/game/GorillaMode";
 import Leaderboard from "./components/game/Leaderboard";
+import { Toaster } from "sonner";
 
 // Import stores
 import { useGame } from "./lib/stores/useGame";
@@ -60,6 +61,7 @@ function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden' }}>
+      <Toaster position="bottom-center" richColors expand={true} />
       {showCanvas && (
         <KeyboardControls map={controls}>
           {/* Conditionally render 3D or 2D map based on WebGL support */}

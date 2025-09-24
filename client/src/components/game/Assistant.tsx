@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/button";
 import { useEcosystem } from "@/lib/stores/useEcosystem";
 import { useCountries } from "@/lib/stores/useCountries";
 import { useUI } from "@/lib/stores/useUI";
-import { AlertTriangle, Info, CheckCircle, X, Bot, Sparkles, AlertCircle } from "lucide-react";
+import { AlertTriangle, Info, CheckCircle, X, Bot, Sparkles, AlertCircle, ChevronDown, ChevronUp, Send } from "lucide-react";
 import { useState, useEffect } from "react";
 import { aiService, type AIRecommendationResponse } from "@/lib/ai-service";
+import { useSession } from "@/lib/stores/useSession";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 
 export default function Assistant() {
   const { foodChain, resources, humanActivity, ecoScore, scoreHistory, setFoodChain, setResources, setHumanActivity } = useEcosystem();
@@ -16,6 +19,11 @@ export default function Assistant() {
   const [aiResponse, setAiResponse] = useState<AIRecommendationResponse | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [showToolConfirmation, setShowToolConfirmation] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const { ensureSession } = useSession();
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Record<number, boolean>>({});
+  const [userInput, setUserInput] = useState("");
+  const [isSendingQuestion, setIsSendingQuestion] = useState(false);
 
   if (!selectedCountry) return null;
 
@@ -114,9 +122,24 @@ export default function Assistant() {
       setAiResponse(response);
       setIsAIMode(true);
 
+      // If tools were requested but none provided, add a fallback suggestion
+      if (allowTools && response.success && (!response.toolCalls || response.toolCalls.length === 0)) {
+        response.toolCalls = [{
+          type: 'function',
+          function: {
+            name: 'adjust_resources',
+            arguments: { change: 5, reason: 'Small resource adjustment to maintain ecosystem balance' }
+          }
+        }];
+      }
+
       // If there are tool calls and user hasn't confirmed yet, show confirmation
       if (response.toolCalls && response.toolCalls.length > 0 && allowTools) {
         setShowToolConfirmation(true);
+        // Preselect all suggestions by default
+        const pre: Record<number, boolean> = {};
+        response.toolCalls.forEach((_, idx) => (pre[idx] = true));
+        setSelectedSuggestions(pre);
       }
     } catch (error) {
       console.error('Failed to get AI recommendation:', error);
@@ -133,37 +156,133 @@ export default function Assistant() {
     if (!aiResponse?.toolCalls || aiResponse.toolCalls.length === 0) return;
 
     try {
-      // For now, we'll simulate session ID - in a real app this would come from a session store
-      const sessionId = `session_${Date.now()}`;
-      
-      // Apply tool calls by directly updating the ecosystem state
-      for (const toolCall of aiResponse.toolCalls) {
-        if (toolCall.type === 'function') {
-          const { name, arguments: args } = toolCall.function;
-          
-          switch (name) {
-            case 'adjust_food_chain':
-              const newFoodChain = Math.max(0, Math.min(100, foodChain + args.change));
-              setFoodChain(newFoodChain);
-              break;
-            case 'adjust_resources':
-              const newResources = Math.max(0, Math.min(100, resources + args.change));
-              setResources(newResources);
-              break;
-            case 'adjust_human_activity':
-              const newHumanActivity = Math.max(0, Math.min(100, humanActivity + args.change));
-              setHumanActivity(newHumanActivity);
-              break;
-          }
-        }
+      const sessionId = await ensureSession(selectedCountry);
+      if (!sessionId) throw new Error('Unable to create a session');
+
+      // Apply tool calls on server for consistency and auditing
+      const selectedToolCalls = aiResponse.toolCalls.filter((_, idx) => selectedSuggestions[idx]);
+      if (selectedToolCalls.length === 0) {
+        setShowToolConfirmation(false);
+        return;
       }
-      
+      const result = await aiService.applyToolCalls(sessionId, selectedToolCalls);
+      if (!result.success) throw new Error(result.error || 'Failed applying tools');
+
+      // Reflect returned state in local store
+      if (result.currentState) {
+        setFoodChain(result.currentState.foodChain);
+        setResources(result.currentState.resources);
+        setHumanActivity(result.currentState.humanActivity);
+      }
+
       setShowToolConfirmation(false);
-      // Refresh AI response to show new state
-      setTimeout(() => getAIRecommendation(false), 1000);
+      // Refresh AI response to show new state (advice only)
+      setTimeout(() => getAIRecommendation(false), 600);
+      toast.success("Eco changes applied", { description: "Your ecosystem has been updated." });
     } catch (error) {
       console.error('Failed to apply AI recommendations:', error);
+      toast.error("Couldn't apply changes");
     }
+  };
+
+  const sendQuestion = async () => {
+    if (!userInput.trim()) return;
+    
+    setIsSendingQuestion(true);
+    try {
+      const ecosystemState = {
+        foodChain,
+        resources,
+        humanActivity,
+        ecoScore,
+        scoreHistory
+      };
+
+      const question = userInput.trim();
+      setUserInput("");
+
+      // First, check for direct tool-like syntax in the user's message and parse locally.
+      // This lets users type tool calls directly and get the confirmation UI immediately.
+      const raw = question;
+      const inlineRegex = /`?([a-zA-Z0-9_]+)\s*\(\s*([^)]*)\s*\)`?/gi;
+      let m: RegExpExecArray | null;
+      const parsedTools: any[] = [];
+
+      const nameMap: Record<string, string> = {
+        'change_human_activity': 'adjust_human_activity',
+        'set_human_activity': 'adjust_human_activity',
+        'adjusthumanactivity': 'adjust_human_activity',
+        'adjust_human_activity': 'adjust_human_activity',
+        'sethumanactivity': 'adjust_human_activity',
+        'adjust_resources': 'adjust_resources',
+        'set_resources': 'adjust_resources',
+        'adjust_food_chain': 'adjust_food_chain',
+        'set_food_chain': 'adjust_food_chain'
+      };
+
+      const normalizeName = (rawName: string) => {
+        const cleaned = rawName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+        return nameMap[cleaned] || (cleaned.includes('human') ? 'adjust_human_activity' : cleaned.includes('resource') ? 'adjust_resources' : cleaned.includes('food') ? 'adjust_food_chain' : cleaned);
+      };
+
+      while ((m = inlineRegex.exec(raw)) !== null) {
+        const rawName = m[1];
+        const argsStr = m[2] || '';
+        const name = normalizeName(rawName);
+        const args: any = {};
+        if (argsStr.trim()) {
+          if (argsStr.includes(':')) {
+            const pairs = argsStr.split(',').map(s => s.trim()).filter(Boolean);
+            pairs.forEach(pair => {
+              const [k, v] = pair.split(':').map(s => s.trim());
+              if (k && typeof v !== 'undefined') {
+                const n = parseFloat(v.replace(/['"]/g, ''));
+                args[k] = isNaN(n) ? v.replace(/^['"]|['"]$/g, '') : n;
+              }
+            });
+          } else {
+            const n = parseFloat(argsStr.trim());
+            if (!isNaN(n)) args.change = n;
+          }
+        }
+        parsedTools.push({ type: 'function', function: { name, arguments: args } });
+      }
+
+      if (parsedTools.length > 0) {
+        // Provide a cleaned message (remove inline tool syntax)
+        const cleaned = raw.replace(/`?[a-zA-Z0-9_]+\s*\([^)]*\)`?/gi, '').trim();
+        const response: AIRecommendationResponse = {
+          success: true,
+          message: cleaned || 'Tool change requested',
+          toolCalls: parsedTools
+        };
+        setAiResponse(response);
+        setIsAIMode(true);
+        setShowToolConfirmation(true);
+        const pre: Record<number, boolean> = {};
+        response.toolCalls!.forEach((_: any, idx: number) => (pre[idx] = true));
+        setSelectedSuggestions(pre);
+        setIsSendingQuestion(false);
+        setExpanded(false);
+        return;
+      }
+
+      // No direct tool call found in user message: forward to AI normally (no tools)
+      const response = await aiService.getRecommendation({
+        ecosystemState,
+        country: selectedCountry,
+        userMessage: question,
+        allowTools: false
+      });
+      try { console.debug('[Assistant] AI response', response); } catch {}
+      setAiResponse(response);
+      setIsAIMode(true);
+      setExpanded(false);
+    } catch (error) {
+      console.error('Failed to send question:', error);
+      toast.error("Failed to send question");
+    }
+    setIsSendingQuestion(false);
   };
 
   const advice = getAdvice();
@@ -212,10 +331,10 @@ export default function Assistant() {
         right: scoreBreakdownOpen ? `${16 + 340}px` : '16px',
       }}
     >
-      <Card className={`bg-black/80 text-white backdrop-blur-sm w-80 ${
+      <Card className={`w-full max-w-sm sm:max-w-md md:max-w-lg text-white rounded-2xl border shadow-xl backdrop-blur-md bg-gradient-to-b from-zinc-900/70 to-zinc-900/40 ${
         isAIMode ? 'border-purple-600' : getCardBorder(advice.type)
       }`}>
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 max-h-96 overflow-y-auto">
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
               {isAIMode ? (
@@ -260,40 +379,75 @@ export default function Assistant() {
             </div>
           </div>
           
-          <div className="text-sm text-gray-300 leading-relaxed">
+          <div className="text-sm text-gray-200 leading-relaxed">
             {isAIMode && aiResponse ? (
               <div className="space-y-3">
                 {aiResponse.success ? (
                   <>
-                    <p>{aiResponse.message}</p>
+                    {aiResponse.message && (
+                      <div className="relative">
+                        <div className={`transition-all ${expanded ? '' : 'max-h-16 overflow-hidden'}`}>
+                          <p>{aiResponse.message}</p>
+                        </div>
+                        {!expanded && aiResponse.message.length > 100 && (
+                          <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-zinc-900/90 to-transparent" />
+                        )}
+                        {aiResponse.message.length > 100 && (
+                          <button
+                            className="mt-2 px-2 py-1 text-xs text-purple-300 hover:text-purple-200 bg-purple-900/20 hover:bg-purple-900/40 rounded inline-flex items-center gap-1 transition-colors"
+                            onClick={() => setExpanded((v) => !v)}
+                          >
+                            {expanded ? <><ChevronUp className="w-3 h-3"/> Show less</> : <><ChevronDown className="w-3 h-3"/> Read more</>}
+                          </button>
+                        )}
+                      </div>
+                    )}
                     
                     {/* Show tool confirmation if needed */}
                     {showToolConfirmation && aiResponse.toolCalls && aiResponse.toolCalls.length > 0 && (
-                      <div className="bg-purple-900/30 border border-purple-600 rounded p-3 space-y-2">
+                      <div className="bg-purple-900/30 border border-purple-600 rounded-xl p-3 space-y-2">
                         <div className="flex items-center gap-2 text-purple-300">
                           <AlertCircle className="w-4 h-4" />
                           <span className="font-medium text-xs">AI wants to make changes:</span>
                         </div>
-                        <ul className="text-xs space-y-1 text-purple-200 ml-6">
-                          {aiResponse.toolCalls.map((toolCall, index) => (
-                            <li key={index}>
-                              • {toolCall.function.arguments.reason}
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="space-y-1 text-xs text-purple-100">
+                          {aiResponse.toolCalls.map((toolCall, index) => {
+                            let reason = toolCall.function?.arguments?.reason || 'Suggested change';
+                            const name = toolCall.function?.name;
+                            const change = toolCall.function?.arguments?.change;
+                            return (
+                              <label key={index} className="flex items-center justify-between gap-2 bg-purple-950/40 border border-purple-700/40 rounded-md px-2 py-1 cursor-pointer">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={!!selectedSuggestions[index]}
+                                    onChange={(e) => setSelectedSuggestions((prev) => ({ ...prev, [index]: e.target.checked }))}
+                                    className="accent-purple-500"
+                                  />
+                                  <div className="truncate">
+                                    <span className="opacity-80">{index+1}.</span> {reason}
+                                  </div>
+                                </div>
+                                <div className="text-[10px] font-mono opacity-80">
+                                  {name}:{typeof change==='number'? (change>0?`+${change}`:change):''}
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
                         <div className="flex gap-2 pt-2">
                           <Button
                             size="sm"
                             onClick={applyAIRecommendations}
-                            className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto"
+                            className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto rounded-full"
                           >
-                            Apply Changes
+                            Apply Selected
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => setShowToolConfirmation(false)}
-                            className="border-purple-600 text-purple-300 hover:bg-purple-900/30 text-xs px-3 py-1 h-auto"
+                            className="border-purple-600 text-purple-300 hover:bg-purple-900/30 text-xs px-3 py-1 h-auto rounded-full"
                           >
                             Just Advice
                           </Button>
@@ -306,9 +460,9 @@ export default function Assistant() {
                         size="sm"
                         onClick={() => getAIRecommendation(true)}
                         disabled={isLoadingAI}
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto"
+                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto rounded-full"
                       >
-                        {isLoadingAI ? "Loading..." : "Give Recommendations"}
+                        {isLoadingAI ? "Loading..." : "Suggest Changes"}
                       </Button>
                       <Button
                         size="sm"
@@ -318,10 +472,38 @@ export default function Assistant() {
                           setAiResponse(null);
                           setShowToolConfirmation(false);
                         }}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-3 py-1 h-auto"
+                        className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-3 py-1 h-auto rounded-full"
                       >
                         Back to Tips
                       </Button>
+                    </div>
+                    
+                    {/* Question input */}
+                    <div className="mt-4 pt-3 border-t border-gray-600">
+                      <div className="flex gap-2">
+                        <Input
+                          value={userInput}
+                          onChange={(e) => setUserInput(e.target.value)}
+                          placeholder="Ask about your ecosystem..."
+                          className="flex-1 bg-gray-800/50 border-gray-600 text-white text-sm placeholder-gray-400 rounded-full"
+                          onKeyDown={(e) => e.key === 'Enter' && sendQuestion()}
+                        />
+                        <Button
+                          size="sm"
+                          onClick={sendQuestion}
+                          disabled={!userInput.trim() || isSendingQuestion}
+                          className="bg-purple-600 hover:bg-purple-700 rounded-full px-3"
+                        >
+                          {isSendingQuestion ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Ask questions about ecosystem balance, game mechanics, or get more details.
+                      </p>
                     </div>
                   </>
                 ) : (
@@ -336,7 +518,7 @@ export default function Assistant() {
                         setIsAIMode(false);
                         setAiResponse(null);
                       }}
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-auto"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-2 py-1 h-auto rounded-full"
                     >
                       Back to Tips
                     </Button>
@@ -353,7 +535,7 @@ export default function Assistant() {
                     size="sm"
                     onClick={() => getAIRecommendation(false)}
                     disabled={isLoadingAI}
-                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto flex items-center gap-1"
+                    className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto flex items-center gap-1 rounded-full"
                   >
                     {isLoadingAI ? (
                       <>

@@ -214,6 +214,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug route: parse arbitrary assistant text and return extracted tool calls.
+  // Useful for reproducing parsing problems without calling external AI.
+  app.post('/api/ai/parse-debug', (req, res) => {
+    const { text } = req.body || {};
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'Missing required field: text (string)' });
+    }
+    try {
+      const parsed = openRouterService.parseTextForTools(text);
+      res.json({ success: true, parsed });
+    } catch (error) {
+      console.error('Parse debug error:', error);
+      res.status(500).json({ success: false, error: 'Failed to parse text' });
+    }
+  });
+
   app.post("/api/ai/apply-tools", (req, res) => {
     const { sessionId, toolCalls } = req.body;
     
@@ -231,11 +247,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Apply each tool call
     for (const toolCall of toolCalls) {
       if (toolCall.type === 'function') {
-        const { name, arguments: args } = toolCall.function;
+        const { name } = toolCall.function;
+        let args = toolCall.function.arguments;
+        if (typeof args === 'string') {
+          try { args = JSON.parse(args); } catch {
+            args = {};
+          }
+        }
+        const reason = typeof args?.reason === 'string' ? args.reason : 'AI suggested change';
         
         switch (name) {
           case 'adjust_food_chain':
-            const foodChainChange = Math.max(-50, Math.min(50, args.change));
+            const foodChainChange = Math.max(-50, Math.min(50, Number(args.change) || 0));
             session.currentState.foodChain = Math.max(0, Math.min(100, 
               session.currentState.foodChain + foodChainChange
             ));
@@ -243,12 +266,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'food_chain',
               change: foodChainChange,
               newValue: session.currentState.foodChain,
-              reason: args.reason
+              reason
             });
             break;
             
           case 'adjust_resources':
-            const resourceChange = Math.max(-50, Math.min(50, args.change));
+            const resourceChange = Math.max(-50, Math.min(50, Number(args.change) || 0));
             session.currentState.resources = Math.max(0, Math.min(100,
               session.currentState.resources + resourceChange
             ));
@@ -256,12 +279,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'resources',
               change: resourceChange,
               newValue: session.currentState.resources,
-              reason: args.reason
+              reason
             });
             break;
             
           case 'adjust_human_activity':
-            const humanActivityChange = Math.max(-50, Math.min(50, args.change));
+            const humanActivityChange = Math.max(-50, Math.min(50, Number(args.change) || 0));
             session.currentState.humanActivity = Math.max(0, Math.min(100,
               session.currentState.humanActivity + humanActivityChange
             ));
@@ -269,7 +292,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'human_activity',
               change: humanActivityChange,
               newValue: session.currentState.humanActivity,
-              reason: args.reason
+              reason
             });
             break;
         }
