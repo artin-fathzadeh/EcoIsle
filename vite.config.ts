@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 export default defineConfig({
   plugins: [
     react(),
-    runtimeErrorOverlay(),
+    // runtimeErrorOverlay(), // Temporarily disabled to check WebSocket issue
     glsl(), // Add GLSL shader support
   ],
   resolve: {
@@ -24,6 +24,10 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+  },
+  // Disable HMR to avoid WebSocket issues
+  server: {
+    hmr: false,
   },
   // Add support for large models and audio files
   assetsInclude: ["**/*.gltf", "**/*.glb", "**/*.mp3", "**/*.ogg", "**/*.wav"],

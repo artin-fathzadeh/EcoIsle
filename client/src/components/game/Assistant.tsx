@@ -2,12 +2,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEcosystem } from "@/lib/stores/useEcosystem";
 import { useCountries } from "@/lib/stores/useCountries";
-import { AlertTriangle, Info, CheckCircle, X } from "lucide-react";
-import { useState } from "react";
+import { useUI } from "@/lib/stores/useUI";
+import { AlertTriangle, Info, CheckCircle, X, Bot } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export default function Assistant() {
   const { foodChain, resources, humanActivity, ecoScore } = useEcosystem();
   const { selectedCountry } = useCountries();
+  const { scoreBreakdownOpen } = useUI();
   const [isMinimized, setIsMinimized] = useState(false);
 
   if (!selectedCountry) return null;
@@ -108,21 +110,30 @@ export default function Assistant() {
 
   if (isMinimized) {
     return (
-      <div className="absolute bottom-4 right-4 pointer-events-auto">
+      <div 
+        className="absolute bottom-4 pointer-events-auto transition-all duration-500 ease-out"
+        style={{
+          right: scoreBreakdownOpen ? `${16 + 340}px` : '16px',
+        }}
+      >
         <Button
           onClick={() => setIsMinimized(false)}
-          variant="outline"
-          size="sm"
-          className="bg-black/80 border-gray-600 text-white hover:bg-gray-700"
+          className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 p-0 shadow-lg hover:shadow-xl transition-all duration-200"
+          title="Open Eco Assistant"
         >
-          <advice.icon className={`w-4 h-4 ${getIconColor(advice.type)}`} />
+          <Bot className="w-6 h-6" />
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="absolute bottom-20 right-4 pointer-events-auto">
+    <div 
+      className="absolute bottom-20 pointer-events-auto transition-all duration-500 ease-out"
+      style={{
+        right: scoreBreakdownOpen ? `${16 + 340}px` : '16px',
+      }}
+    >
       <Card className={`bg-black/80 text-white backdrop-blur-sm w-80 ${getCardBorder(advice.type)}`}>
         <CardContent className="pt-4">
           <div className="flex items-start justify-between mb-2">

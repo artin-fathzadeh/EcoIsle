@@ -87,7 +87,6 @@ export default function GameModeSelector() {
   if (!selectedCountry) return null;
 
   const handleModeSelect = (mode: GameMode) => {
-    setSelectedMode(mode);
     if (mode !== 'education') {
       initializeCardGame(mode, 1);
     }
@@ -111,9 +110,40 @@ export default function GameModeSelector() {
 
       {/* Mode selector modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <Card className="bg-gray-900 text-white border-gray-600 w-full max-w-4xl">
-            <CardHeader>
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 pointer-events-auto"
+          onWheel={(e: React.WheelEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchMove={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onScroll={(e: React.UIEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e: React.MouseEvent) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              setIsOpen(false);
+            }
+          }}
+        >
+          <Card 
+            className="bg-gray-900 text-white border-gray-600 w-full max-w-4xl max-h-[90vh]"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            <CardHeader className="sticky top-0 bg-gray-900 border-b border-gray-600 z-10">
               <CardTitle className="flex items-center justify-between text-xl">
                 <div className="flex items-center gap-2">
                   <Gamepad2 className="w-6 h-6 text-purple-400" />
@@ -123,19 +153,34 @@ export default function GameModeSelector() {
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
+                  className="hover:bg-gray-700"
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </CardTitle>
             </CardHeader>
             
-            <CardContent className="space-y-6">
-              <div className="grid md:grid-cols-3 gap-4">
+            <CardContent 
+              className="overflow-y-auto max-h-[calc(90vh-120px)] space-y-6"
+              onWheel={(e: React.WheelEvent) => {
+                // Allow scrolling within the modal content
+                const target = e.currentTarget as HTMLElement;
+                const { scrollTop, scrollHeight, clientHeight } = target;
+                
+                // If scrolling up and at top, or scrolling down and at bottom, prevent bubbling
+                if ((e.deltaY < 0 && scrollTop === 0) || 
+                    (e.deltaY > 0 && scrollTop >= scrollHeight - clientHeight)) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
+            >
+              {/* Add margin below header to prevent overlap */}
+              <div className="mt-4 grid md:grid-cols-3 gap-4">
                 {gameModeOptions.map((option) => {
                   const IconComponent = option.icon;
                   const isSelected = selectedMode === option.mode;
                   const isCurrent = gameMode === option.mode;
-                  
                   return (
                     <Card
                       key={option.mode}
@@ -157,12 +202,10 @@ export default function GameModeSelector() {
                           )}
                         </CardTitle>
                       </CardHeader>
-                      
                       <CardContent className="space-y-3">
                         <p className="text-gray-300 text-sm">
                           {option.description}
                         </p>
-                        
                         <div className="space-y-1">
                           <div className="text-xs font-medium text-gray-400">Features:</div>
                           <ul className="text-xs text-gray-300 space-y-1">
@@ -179,7 +222,6 @@ export default function GameModeSelector() {
                   );
                 })}
               </div>
-              
               {/* Current country info */}
               <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/30">
                 <div className="flex items-center gap-2 mb-2">

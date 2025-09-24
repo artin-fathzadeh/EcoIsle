@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ChevronLeft, Bot, X, Lightbulb, BookOpen, Target } from "lucide-react";
 import { useCountries } from "@/lib/stores/useCountries";
+import { useUI } from "@/lib/stores/useUI";
 
 interface TutorialStep {
   id: number;
@@ -53,10 +54,14 @@ const tutorialSteps: TutorialStep[] = [
 export default function IntroBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
-  const [hasSeenIntro, setHasSeenIntro] = useState(false);
+  const [hasSeenIntro, setHasSeenIntro] = useState(() => {
+    // Check localStorage to see if user has seen intro before
+    return localStorage.getItem('ecoisle-intro-seen') === 'true';
+  });
   const { selectedCountry } = useCountries();
+  const { ecoAssistantOffset } = useUI();
 
-  // Auto-open when a country is first selected
+  // Auto-open when a country is first selected and user hasn't seen intro
   useEffect(() => {
     if (selectedCountry && !hasSeenIntro) {
       setIsOpen(true);
@@ -78,6 +83,8 @@ export default function IntroBot() {
   const closeTutorial = () => {
     setIsOpen(false);
     setHasSeenIntro(true);
+    // Save to localStorage so it persists across page reloads
+    localStorage.setItem('ecoisle-intro-seen', 'true');
   };
 
   const reopenTutorial = () => {
@@ -94,8 +101,39 @@ export default function IntroBot() {
     <>
       {/* Tutorial Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-lg bg-white shadow-xl">
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 pointer-events-auto"
+          onWheel={(e: React.WheelEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchMove={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onScroll={(e: React.UIEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e: React.MouseEvent) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              closeTutorial();
+            }
+          }}
+        >
+          <Card 
+            className="w-full max-w-lg bg-white shadow-xl"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
             <CardHeader className="relative">
               <Button
                 variant="ghost"
@@ -176,19 +214,6 @@ export default function IntroBot() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* Bot button to reopen tutorial */}
-      {!isOpen && hasSeenIntro && (
-        <div className="absolute top-4 right-4 pointer-events-auto">
-          <Button
-            onClick={reopenTutorial}
-            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 p-0"
-            title="Open Tutorial"
-          >
-            <Bot className="w-6 h-6" />
-          </Button>
         </div>
       )}
     </>

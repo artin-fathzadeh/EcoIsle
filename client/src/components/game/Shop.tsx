@@ -51,8 +51,39 @@ export default function Shop({ isOpen, onClose }: ShopProps) {
   const ownedCount = (potionId: string) => inventory.filter(p => p.id === potionId).length;
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <Card className="bg-gray-900 text-white border-gray-600 w-full max-w-4xl max-h-[90vh] overflow-auto">
+    <div 
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 pointer-events-auto"
+      onWheel={(e: React.WheelEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onTouchStart={(e: React.TouchEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onTouchMove={(e: React.TouchEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onTouchEnd={(e: React.TouchEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onScroll={(e: React.UIEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={(e: React.MouseEvent) => {
+        // Only close if clicking the backdrop, not the modal content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <Card 
+        className="bg-gray-900 text-white border-gray-600 w-full max-w-4xl max-h-[90vh]"
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+      >
         <CardHeader className="sticky top-0 bg-gray-900 border-b border-gray-600">
           <CardTitle className="flex items-center justify-between text-xl">
             <div className="flex items-center gap-2">
@@ -75,7 +106,21 @@ export default function Shop({ isOpen, onClose }: ShopProps) {
           </CardTitle>
         </CardHeader>
         
-        <CardContent className="p-6">
+        <CardContent 
+          className="overflow-y-auto max-h-[calc(90vh-120px)] p-6"
+          onWheel={(e: React.WheelEvent) => {
+            // Allow scrolling within the modal content
+            const target = e.currentTarget as HTMLElement;
+            const { scrollTop, scrollHeight, clientHeight } = target;
+            
+            // If scrolling up and at top, or scrolling down and at bottom, prevent bubbling
+            if ((e.deltaY < 0 && scrollTop === 0) || 
+                (e.deltaY > 0 && scrollTop >= scrollHeight - clientHeight)) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
           <div className="space-y-6">
             {/* Shop description */}
             <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/30">

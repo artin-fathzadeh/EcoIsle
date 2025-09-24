@@ -3,16 +3,18 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { useEcosystem } from "@/lib/stores/useEcosystem";
 import { useCountries } from "@/lib/stores/useCountries";
+import { useUI } from "@/lib/stores/useUI";
 import { calculateEcoScore } from "@/lib/ecosystemEngine";
 import { Leaf, TrendingUp, TrendingDown, Info, ChevronDown, ChevronUp } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function EducationalEcoScore() {
   const { ecoScore, scoreHistory, foodChain, resources, humanActivity } = useEcosystem();
-  const { selectedCountry } = useCountries();
+  const { selectedCountry, currentCountryData } = useCountries();
+  const { setScoreBreakdownOpen, setEcoAssistantOffset, setIsAnimating } = useUI();
   const [showBreakdown, setShowBreakdown] = useState(false);
 
-  if (!selectedCountry) return null;
+  if (!selectedCountry || !currentCountryData) return null;
 
   // Calculate individual component scores (simplified approximation)
   const foodChainScore = Math.max(0, Math.min(100, 100 - Math.abs(foodChain - 50) * 2));
@@ -51,26 +53,43 @@ export default function EducationalEcoScore() {
   const getComponentExplanation = (component: string, value: number, score: number) => {
     switch (component) {
       case 'foodChain':
-        if (value < 30) return "Too few predators - prey species may overpopulate and overgraze.";
-        if (value > 70) return "Too many predators - prey species at risk of extinction.";
-        return "Good predator-prey balance supporting natural selection.";
+        if (score >= 80) return "Perfect balance in the food chain. All species are thriving.";
+        if (score >= 60) return "Good balance with minor imbalances that could be addressed.";
+        if (score >= 40) return "Some disruption in the food chain affecting ecosystem stability.";
+        return "Severe food chain disruption threatening ecosystem collapse.";
       
       case 'resources':
-        if (value < 40) return "Resource depletion threatens ecosystem sustainability.";
-        if (value > 80) return "Excellent conservation supporting long-term health.";
-        return "Moderate resource management - balance extraction with conservation.";
+        if (score >= 80) return "Excellent resource management. All needs are met sustainably.";
+        if (score >= 60) return "Adequate resources with some areas needing attention.";
+        if (score >= 40) return "Resource shortages affecting ecosystem health.";
+        return "Critical resource depletion endangering all species.";
       
       case 'humanActivity':
-        if (value < 20) return "Very low development - preserves nature but limits economic growth.";
-        if (value > 80) return "High urbanization stressing natural habitats.";
-        return "Balanced development with environmental consideration.";
+        if (score >= 80) return "Minimal human impact. Activities are sustainable.";
+        if (score >= 60) return "Moderate human activity with manageable environmental effects.";
+        if (score >= 40) return "Significant human impact requiring intervention.";
+        return "Excessive human activity causing severe environmental damage.";
       
       default:
-        return "";
+        return "Component analysis unavailable.";
     }
   };
 
-  return (
+  // Handle Score Breakdown toggle with animation coordination
+  useEffect(() => {
+    // Update the global state
+    setScoreBreakdownOpen(showBreakdown);
+
+    if (showBreakdown) {
+      // The Score Breakdown and Eco Assistant are both positioned at top-4 right-4
+      // When breakdown is expanded, they visually overlap since they're at the same position
+      // Move the Eco Assistant to the left to avoid overlap
+      setEcoAssistantOffset(360); // Move 360px to the left (past card width 320px + padding)
+    } else {
+      // Reset offset when closing
+      setEcoAssistantOffset(0);
+    }
+  }, [showBreakdown, setScoreBreakdownOpen, setEcoAssistantOffset]);  return (
     <div className="absolute top-4 right-4 pointer-events-auto">
       <Card className="bg-black/90 text-white border-gray-600 backdrop-blur-sm w-80">
         <CardHeader className="pb-3">
@@ -129,7 +148,7 @@ export default function EducationalEcoScore() {
             )}
           </Button>
 
-          {/* Detailed Breakdown */}
+          {/* Detailed Breakdown - Simplified */}
           {showBreakdown && (
             <div className="space-y-3 border-t border-gray-600 pt-3">
               {/* Food Chain */}
@@ -168,27 +187,30 @@ export default function EducationalEcoScore() {
                 </div>
               </div>
 
-              {/* Country Context */}
-              <div className="bg-green-900/20 p-2 rounded text-xs border border-green-500/30">
-                <div className="font-medium text-green-300 mb-1">{selectedCountry} Context:</div>
-                <div className="text-green-100">
-                  {selectedCountry === "USA" && "Industrial nation balancing economic growth with environmental protection."}
-                  {selectedCountry === "Brazil" && "Biodiversity hotspot managing development pressures and conservation needs."}
-                  {selectedCountry === "Norway" && "Arctic nation leveraging renewable resources while protecting marine ecosystems."}
-                  {selectedCountry === "Japan" && "Island nation addressing urban density and marine resource management."}
-                  {selectedCountry === "Kenya" && "Developing country balancing wildlife conservation with human needs."}
+              {/* Trend Information */}
+              <div className="space-y-1 border-t border-gray-600 pt-2">
+                <div className="flex justify-between text-xs">
+                  <span>Recent Trend:</span>
+                  <span className={trend > 0 ? "text-green-400" : trend < 0 ? "text-red-400" : "text-gray-400"}>
+                    {trend > 0 ? "+" : ""}{Math.round(trend)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400">
+                  {trend > 0 ? "Score improving over recent actions" : 
+                   trend < 0 ? "Score declining - review recent changes" : 
+                   "Score stable - maintain current approach"}
                 </div>
               </div>
 
-              {/* Trend Information */}
-              {trend !== 0 && (
-                <div className="flex justify-between text-xs border-t border-gray-600 pt-2">
-                  <span>Recent Trend:</span>
-                  <span className={trend > 0 ? "text-green-400" : "text-red-400"}>
-                    {trend > 0 ? "Improving +" : "Declining "}{Math.abs(trend).toFixed(1)}
-                  </span>
+              {/* Country Context */}
+              <div className="space-y-1">
+                <div className="text-xs text-gray-300 font-medium">Country Context:</div>
+                <div className="text-xs text-gray-400">
+                  Managing ecosystem health for {currentCountryData.name}. 
+                  Located in {currentCountryData.climate} climate with {currentCountryData.population} population. 
+                  Focus on sustainable practices to maintain biodiversity.
                 </div>
-              )}
+              </div>
             </div>
           )}
         </CardContent>

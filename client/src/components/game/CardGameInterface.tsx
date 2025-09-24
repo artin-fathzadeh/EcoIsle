@@ -189,8 +189,39 @@ export default function CardGameInterface() {
 
       {/* Prophecy Modal */}
       {prophecyActive && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <Card className="bg-gray-900 text-white border-purple-500 border-2 max-w-4xl w-full mx-4">
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 pointer-events-auto"
+          onWheel={(e: React.WheelEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchMove={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onScroll={(e: React.UIEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e: React.MouseEvent) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              closeProphecy();
+            }
+          }}
+        >
+          <Card 
+            className="bg-gray-900 text-white border-purple-500 border-2 max-w-4xl w-full mx-4"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -225,8 +256,39 @@ export default function CardGameInterface() {
 
       {/* Level Complete Modal */}
       {isLevelComplete && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <Card className="bg-gray-900 text-white border-green-500 border-2 w-full max-w-md mx-4">
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 pointer-events-auto"
+          onWheel={(e: React.WheelEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchMove={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onScroll={(e: React.UIEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e: React.MouseEvent) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              nextLevel();
+            }
+          }}
+        >
+          <Card 
+            className="bg-gray-900 text-white border-green-500 border-2 w-full max-w-md mx-4"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
             <CardHeader>
               <CardTitle className="text-center text-green-400">
                 <Crown className="w-8 h-8 mx-auto mb-2" />
@@ -256,8 +318,39 @@ export default function CardGameInterface() {
 
       {/* Discard Confirmation Modal */}
       {selectedCardForDiscard && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <Card className="bg-gray-900 text-white border-red-500 w-full max-w-sm mx-4">
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 pointer-events-auto"
+          onWheel={(e: React.WheelEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchStart={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchMove={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onTouchEnd={(e: React.TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onScroll={(e: React.UIEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          onClick={(e: React.MouseEvent) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              setSelectedCardForDiscard(null);
+            }
+          }}
+        >
+          <Card 
+            className="bg-gray-900 text-white border-red-500 w-full max-w-sm mx-4"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
             <CardHeader>
               <CardTitle className="text-red-400">Discard Card?</CardTitle>
             </CardHeader>
