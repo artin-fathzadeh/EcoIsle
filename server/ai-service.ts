@@ -313,7 +313,18 @@ Remember: You are the EcoIsle Assistant, helping players learn about and manage 
           'adjustfoodchain': 'adjust_food_chain',
           'change_food_chain': 'adjust_food_chain',
           'adjust_food_chain': 'adjust_food_chain',
-          'food_chain': 'adjust_food_chain'
+          'food_chain': 'adjust_food_chain',
+          // Custom ecosystem management actions
+          'regulateemissions': 'adjust_human_activity',
+          'investinrenewables': 'adjust_resources',
+          'protectwildlife': 'adjust_food_chain',
+          'conserveresources': 'adjust_resources',
+          'reducepollution': 'adjust_human_activity',
+          'promotesustainability': 'adjust_resources',
+          'balanceecosystem': 'adjust_food_chain',
+          'greeninfrastructure': 'adjust_human_activity',
+          'renewableenergy': 'adjust_resources',
+          'carbonreduction': 'adjust_human_activity'
         };
 
         // Utility to normalize a raw name into canonical tool name
@@ -379,13 +390,58 @@ Remember: You are the EcoIsle Assistant, helping players learn about and manage 
             const r = maybeReason.replace(/^[:#\-*\s]*Reason[:\s]*/i, '').trim();
             if (r) args.reason = r;
           }
+          
+          // Add default arguments based on the tool name if none provided
+          if (!args.change && !args.reason) {
+            switch (name) {
+              case 'adjust_human_activity':
+                args.change = -15;
+                args.reason = `Reducing human development impact through ${rawName.toLowerCase()}`;
+                break;
+              case 'adjust_resources':
+                args.change = 10;
+                args.reason = `Improving resource management through ${rawName.toLowerCase()}`;
+                break;
+              case 'adjust_food_chain':
+                args.change = 5;
+                args.reason = `Enhancing biodiversity through ${rawName.toLowerCase()}`;
+                break;
+              default:
+                args.reason = `Ecosystem improvement through ${rawName.toLowerCase()}`;
+            }
+          } else if (!args.reason) {
+            args.reason = `Ecosystem adjustment through ${rawName.toLowerCase()}`;
+          }
+          
           parsedTools.push({ type: 'function', function: { name, arguments: args } });
         }
 
         if (parsedTools.length > 0) {
           toolCalls = parsedTools;
           // Remove the tool text patterns from the working message to avoid duplication
-          const cleaned = message.replace(toolRegex1, '').replace(toolRegex2, '').replace(/`?[a-zA-Z0-9_]+\s*\([^)]*\)`?/gi, '').trim();
+          // Only remove patterns that were actually parsed as tools to preserve normal text
+          let cleaned = message.replace(toolRegex1, '').replace(toolRegex2, '');
+          
+          // For inline tools, only remove the exact patterns that were matched
+          const inlineRegex = /`?([a-zA-Z0-9_]+)\s*\(\s*([^)]*)\s*\)`?(?:\s*[#\-–:]\s*|\s+Reason:\s*)?([^\n\r]*)/gi;
+          const toolNames = parsedTools.map(t => t.function?.name?.toLowerCase() || '').filter(Boolean);
+          
+          // Only remove inline patterns if they correspond to actual parsed tools
+          cleaned = cleaned.replace(inlineRegex, (match: string, funcName: string, args: string, reason: string) => {
+            const normalizedName = funcName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+            const mappedName = nameMap[normalizedName] || (
+              normalizedName.includes('human') ? 'adjust_human_activity' :
+              normalizedName.includes('resource') || normalizedName.includes('renew') ? 'adjust_resources' :
+              normalizedName.includes('food') || normalizedName.includes('chain') || normalizedName.includes('predat') ? 'adjust_food_chain' :
+              normalizedName
+            );
+            
+            // Only remove if this function was actually parsed as a tool
+            return toolNames.includes(mappedName) ? '' : match;
+          });
+          
+          cleaned = cleaned.trim();
+          
           // Ensure we write the cleaned version back to choice.message.content so downstream
           // consumers (and debug logs) see the user-friendly assistant text without tool fragments.
           if (!choice.message) choice.message = { role: 'assistant', content: '' } as any;

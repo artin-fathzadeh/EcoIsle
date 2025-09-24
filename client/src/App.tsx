@@ -3,7 +3,7 @@ import React, { Suspense, useEffect, useState } from "react";
 import { KeyboardControls } from "@react-three/drei";
 import "@fontsource/inter";
 import { Button } from "./components/ui/button";
-import { Trophy } from "lucide-react";
+import { Trophy, Play } from "lucide-react";
 
 // Import game components
 import WorldMap from "./components/game/WorldMap";
@@ -19,12 +19,14 @@ import CardGameInterface from "./components/game/CardGameInterface";
 import GameModeSelector from "./components/game/GameModeSelector";
 import GorillaMode from "./components/game/GorillaMode";
 import Leaderboard from "./components/game/Leaderboard";
+import GameFlowManager from "./components/game/GameFlowManager";
 import { Toaster } from "sonner";
 
 // Import stores
 import { useGame } from "./lib/stores/useGame";
 import { useCountries } from "./lib/stores/useCountries";
 import { useCardGame } from "./lib/stores/useCardGame";
+import { useGameFlow } from "./lib/stores/useGameFlow";
 
 
 // Define control keys for the game
@@ -42,6 +44,7 @@ function App() {
   const { phase } = useGame();
   const { selectedCountry } = useCountries();
   const { gameMode } = useCardGame();
+  const { currentScreen, navigateToScreen } = useGameFlow();
   const [showCanvas, setShowCanvas] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -112,6 +115,17 @@ function App() {
                 {/* Game mode selector */}
                 <GameModeSelector />
                 
+                {/* New Simulation Workflow Button */}
+                <div className="absolute top-4 left-4 pointer-events-auto">
+                  <Button
+                    onClick={() => navigateToScreen('setup')}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center gap-2"
+                  >
+                    <Play className="w-4 h-4" />
+                    Simulation Mode
+                  </Button>
+                </div>
+                
                 {/* Leaderboard button */}
                 <div className="absolute top-4 right-20 pointer-events-auto">
                   <Button
@@ -129,23 +143,27 @@ function App() {
                 {/* Score display - use educational version for education mode */}
                 {gameMode === 'education' ? <EducationalEcoScore /> : <EcoScore />}
                 
-                {/* Controls and UI based on game mode */}
-                {gameMode === 'education' && (
+                {/* Controls and UI based on game mode - hide during simulation workflow */}
+                {currentScreen !== 'idle' ? null : (
                   <>
-                    <EcosystemControls />
-                    <VisualFeedback />
-                    <Assistant />
+                    {gameMode === 'education' && (
+                      <>
+                        <EcosystemControls />
+                        <VisualFeedback />
+                        <Assistant />
+                      </>
+                    )}
+                    
+                    {/* Card game interface for card modes */}
+                    {(gameMode === 'cards' || gameMode === 'endless') && (
+                      <CardGameInterface />
+                    )}
+                    
+                    {/* Gorilla mode interface */}
+                    {gameMode === 'gorilla' && (
+                      <GorillaMode />
+                    )}
                   </>
-                )}
-                
-                {/* Card game interface for card modes */}
-                {(gameMode === 'cards' || gameMode === 'endless') && (
-                  <CardGameInterface />
-                )}
-                
-                {/* Gorilla mode interface */}
-                {gameMode === 'gorilla' && (
-                  <GorillaMode />
                 )}
                 
                 {/* Leaderboard Modal */}
@@ -156,6 +174,9 @@ function App() {
               </>
             )}
           </div>
+          
+          {/* Three-Screen Simulation Workflow */}
+          <GameFlowManager />
         </KeyboardControls>
       )}
     </div>

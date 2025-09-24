@@ -9,6 +9,7 @@ import { aiService, type AIRecommendationResponse } from "@/lib/ai-service";
 import { useSession } from "@/lib/stores/useSession";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Draggable, DragHandle } from "@/components/ui/draggable";
 
 export default function Assistant() {
   const { foodChain, resources, humanActivity, ecoScore, scoreHistory, setFoodChain, setResources, setHumanActivity } = useEcosystem();
@@ -217,12 +218,28 @@ export default function Assistant() {
         'adjust_resources': 'adjust_resources',
         'set_resources': 'adjust_resources',
         'adjust_food_chain': 'adjust_food_chain',
-        'set_food_chain': 'adjust_food_chain'
+        'set_food_chain': 'adjust_food_chain',
+        // Custom ecosystem management actions
+        'regulateemissions': 'adjust_human_activity',
+        'investinrenewables': 'adjust_resources',
+        'protectwildlife': 'adjust_food_chain',
+        'conserveresources': 'adjust_resources',
+        'reducepollution': 'adjust_human_activity',
+        'promotesustainability': 'adjust_resources',
+        'balanceecosystem': 'adjust_food_chain',
+        'greeninfrastructure': 'adjust_human_activity',
+        'renewableenergy': 'adjust_resources',
+        'carbonreduction': 'adjust_human_activity'
       };
 
       const normalizeName = (rawName: string) => {
         const cleaned = rawName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
-        return nameMap[cleaned] || (cleaned.includes('human') ? 'adjust_human_activity' : cleaned.includes('resource') ? 'adjust_resources' : cleaned.includes('food') ? 'adjust_food_chain' : cleaned);
+        if (nameMap[cleaned]) return nameMap[cleaned];
+        // fallback by keywords
+        if (cleaned.includes('human')) return 'adjust_human_activity';
+        if (cleaned.includes('resource') || cleaned.includes('renew')) return 'adjust_resources';
+        if (cleaned.includes('food') || cleaned.includes('chain') || cleaned.includes('predat')) return 'adjust_food_chain';
+        return cleaned;
       };
 
       while ((m = inlineRegex.exec(raw)) !== null) {
@@ -245,15 +262,53 @@ export default function Assistant() {
             if (!isNaN(n)) args.change = n;
           }
         }
+        
+        // Add default arguments based on the tool name if none provided
+        if (!args.change && !args.reason) {
+          switch (name) {
+            case 'adjust_human_activity':
+              args.change = -15;
+              args.reason = `Reducing human development impact through ${rawName.toLowerCase()}`;
+              break;
+            case 'adjust_resources':
+              args.change = 10;
+              args.reason = `Improving resource management through ${rawName.toLowerCase()}`;
+              break;
+            case 'adjust_food_chain':
+              args.change = 5;
+              args.reason = `Enhancing biodiversity through ${rawName.toLowerCase()}`;
+              break;
+            default:
+              args.reason = `Ecosystem improvement through ${rawName.toLowerCase()}`;
+          }
+        } else if (!args.reason) {
+          args.reason = `Ecosystem adjustment through ${rawName.toLowerCase()}`;
+        }
         parsedTools.push({ type: 'function', function: { name, arguments: args } });
       }
 
       if (parsedTools.length > 0) {
-        // Provide a cleaned message (remove inline tool syntax)
-        const cleaned = raw.replace(/`?[a-zA-Z0-9_]+\s*\([^)]*\)`?/gi, '').trim();
+        // Provide a cleaned message (remove only the specific inline tool syntax that was parsed)
+        let cleaned = raw;
+        const toolNames = parsedTools.map(t => t.function?.name?.toLowerCase() || '').filter(Boolean);
+        
+        // Only remove patterns that correspond to actual parsed tools
+        cleaned = cleaned.replace(/`?([a-zA-Z0-9_]+)\s*\(\s*([^)]*)\s*\)`?/gi, (match, funcName, args) => {
+          const normalizedName = funcName.replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+          const mappedName = nameMap[normalizedName] || (
+            normalizedName.includes('human') ? 'adjust_human_activity' :
+            normalizedName.includes('resource') || normalizedName.includes('renew') ? 'adjust_resources' :
+            normalizedName.includes('food') || normalizedName.includes('chain') || normalizedName.includes('predat') ? 'adjust_food_chain' :
+            normalizedName
+          );
+          
+          // Only remove if this function was actually parsed as a tool
+          return toolNames.includes(mappedName) ? '' : match;
+        }).trim();
+        
         const response: AIRecommendationResponse = {
           success: true,
-          message: cleaned || 'Tool change requested',
+          message: cleaned || 'Tool changes requested',
           toolCalls: parsedTools
         };
         setAiResponse(response);
@@ -325,11 +380,12 @@ export default function Assistant() {
   }
 
   return (
-    <div 
-      className="absolute bottom-20 pointer-events-auto transition-all duration-500 ease-out"
-      style={{
-        right: scoreBreakdownOpen ? `${16 + 340}px` : '16px',
-      }}
+    <Draggable
+      defaultPosition={{ x: 0, y: 0 }}
+      bounds={typeof window !== 'undefined' ? { top: 0, left: 0, right: window.innerWidth - 400, bottom: window.innerHeight - 200 } : undefined}
+      persistPosition="assistant"
+      dragHandleClassName="drag-handle"
+      className="bottom-20 right-4 pointer-events-auto transition-all duration-500 ease-out"
     >
       <Card className={`w-full max-w-sm sm:max-w-md md:max-w-lg text-white rounded-2xl border shadow-xl backdrop-blur-md bg-gradient-to-b from-zinc-900/70 to-zinc-900/40 ${
         isAIMode ? 'border-purple-600' : getCardBorder(advice.type)
@@ -347,6 +403,7 @@ export default function Assistant() {
               </span>
             </div>
             <div className="flex items-center gap-1">
+              <DragHandle className="drag-handle" />
               {!isAIMode && (
                 <Button
                   variant="ghost"
@@ -569,6 +626,6 @@ export default function Assistant() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </Draggable>
   );
 }
