@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from 'ws';
 import { storage } from "./storage";
+import { openRouterService, type AIRecommendationRequest } from "./ai-service";
 
 // Extend WebSocket to include custom properties
 interface ExtendedWebSocket extends WebSocket {
@@ -190,6 +191,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "Score submitted to leaderboard" });
   });
   
+  // AI Assistant endpoints
+  app.post("/api/ai/recommendation", async (req, res) => {
+    try {
+      const aiRequest: AIRecommendationRequest = req.body;
+      
+      // Validate request
+      if (!aiRequest.ecosystemState || !aiRequest.country) {
+        return res.status(400).json({ 
+          error: "Missing required fields: ecosystemState and country" 
+        });
+      }
+
+      const response = await openRouterService.getRecommendation(aiRequest);
+      res.json(response);
+    } catch (error) {
+      console.error('AI recommendation error:', error);
+      res.status(500).json({ 
+        error: "Failed to get AI recommendation",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/ai/apply-tools", (req, res) => {
+    const { sessionId, toolCalls } = req.body;
+    
+    if (!sessionId || !toolCalls || !Array.isArray(toolCalls)) {
+      return res.status(400).json({ error: "Invalid request format" });
+    }
+
+    const session = gameSessions.get(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Game session not found" });
+    }
+
+    const appliedChanges: any[] = [];
+    
+    // Apply each tool call
+    for (const toolCall of toolCalls) {
+      if (toolCall.type === 'function') {
+        const { name, arguments: args } = toolCall.function;
+        
+        switch (name) {
+          case 'adjust_food_chain':
+            const foodChainChange = Math.max(-50, Math.min(50, args.change));
+            session.currentState.foodChain = Math.max(0, Math.min(100, 
+              session.currentState.foodChain + foodChainChange
+            ));
+            appliedChanges.push({
+              type: 'food_chain',
+              change: foodChainChange,
+              newValue: session.currentState.foodChain,
+              reason: args.reason
+            });
+            break;
+            
+          case 'adjust_resources':
+            const resourceChange = Math.max(-50, Math.min(50, args.change));
+            session.currentState.resources = Math.max(0, Math.min(100,
+              session.currentState.resources + resourceChange
+            ));
+            appliedChanges.push({
+              type: 'resources',
+              change: resourceChange,
+              newValue: session.currentState.resources,
+              reason: args.reason
+            });
+            break;
+            
+          case 'adjust_human_activity':
+            const humanActivityChange = Math.max(-50, Math.min(50, args.change));
+            session.currentState.humanActivity = Math.max(0, Math.min(100,
+              session.currentState.humanActivity + humanActivityChange
+            ));
+            appliedChanges.push({
+              type: 'human_activity',
+              change: humanActivityChange,
+              newValue: session.currentState.humanActivity,
+              reason: args.reason
+            });
+            break;
+        }
+      }
+    }
+
+    // Recalculate eco score after applying changes
+    const { foodChain, resources, humanActivity } = session.currentState;
+    session.currentState.ecoScore = Math.round(
+      (foodChain * 0.4) + (resources * 0.35) + ((100 - Math.abs(humanActivity - 50)) * 0.25)
+    );
+
+    // Add event to session history
+    session.events.push({
+      timestamp: Date.now(),
+      type: 'ai_tool_application',
+      data: { toolCalls, appliedChanges, newEcoScore: session.currentState.ecoScore }
+    });
+
+    res.json({
+      success: true,
+      appliedChanges,
+      currentState: session.currentState
+    });
+  });
+
   // Special endpoint for Gorilla Mode
   app.post("/api/game/gorilla-challenge", (req, res) => {
     const { sessionId, action } = req.body;
