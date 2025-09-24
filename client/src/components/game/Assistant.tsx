@@ -9,6 +9,7 @@ import { aiService, type AIRecommendationResponse } from "@/lib/ai-service";
 import { useSession } from "@/lib/stores/useSession";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
+import { Draggable, DragHandle } from "@/components/ui/draggable";
 
 export default function Assistant() {
   const { foodChain, resources, humanActivity, ecoScore, scoreHistory, setFoodChain, setResources, setHumanActivity } = useEcosystem();
@@ -325,11 +326,12 @@ export default function Assistant() {
   }
 
   return (
-    <div 
-      className="absolute bottom-20 pointer-events-auto transition-all duration-500 ease-out"
-      style={{
-        right: scoreBreakdownOpen ? `${16 + 340}px` : '16px',
-      }}
+    <Draggable
+      defaultPosition={{ x: 0, y: 0 }}
+      bounds={typeof window !== 'undefined' ? { top: 0, left: 0, right: window.innerWidth - 400, bottom: window.innerHeight - 200 } : undefined}
+      persistPosition="assistant"
+      dragHandleClassName="drag-handle"
+      className="bottom-20 right-4 pointer-events-auto transition-all duration-500 ease-out"
     >
       <Card className={`w-full max-w-sm sm:max-w-md md:max-w-lg text-white rounded-2xl border shadow-xl backdrop-blur-md bg-gradient-to-b from-zinc-900/70 to-zinc-900/40 ${
         isAIMode ? 'border-purple-600' : getCardBorder(advice.type)
@@ -347,6 +349,7 @@ export default function Assistant() {
               </span>
             </div>
             <div className="flex items-center gap-1">
+              <DragHandle className="drag-handle" />
               {!isAIMode && (
                 <Button
                   variant="ghost"
@@ -569,6 +572,6 @@ export default function Assistant() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </Draggable>
   );
 }

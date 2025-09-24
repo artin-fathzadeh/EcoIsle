@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useEcosystem } from "@/lib/stores/useEcosystem";
 import { useCountries } from "@/lib/stores/useCountries";
 import { RotateCcw } from "lucide-react";
+import { Draggable, DragHandle } from "@/components/ui/draggable";
 
 export default function EcosystemControls() {
   const { 
@@ -21,19 +22,28 @@ export default function EcosystemControls() {
   if (!selectedCountry) return null;
 
   return (
-    <div className="absolute bottom-4 left-4 pointer-events-auto">
+    <Draggable
+      defaultPosition={{ x: 0, y: 0 }}
+      bounds={typeof window !== 'undefined' ? { top: 0, left: 0, right: window.innerWidth - 320, bottom: window.innerHeight - 200 } : undefined}
+      persistPosition="ecosystem-controls"
+      dragHandleClassName="drag-handle"
+      className="bottom-4 left-4 pointer-events-auto"
+    >
       <Card className="bg-black/80 text-white border-gray-600 backdrop-blur-sm w-80">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             Ecosystem Controls
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetToDefaults}
-              className="border-gray-600 hover:bg-gray-700"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <DragHandle className="drag-handle" />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetToDefaults}
+                className="border-gray-600 hover:bg-gray-700"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -99,6 +109,6 @@ export default function EcosystemControls() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </Draggable>
   );
 }

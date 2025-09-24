@@ -3,6 +3,7 @@ import { Progress } from "@/components/ui/progress";
 import { useEcosystem } from "@/lib/stores/useEcosystem";
 import { useCountries } from "@/lib/stores/useCountries";
 import { Leaf, TrendingUp, TrendingDown } from "lucide-react";
+import { Draggable, DragHandle } from "@/components/ui/draggable";
 
 export default function EcoScore() {
   const { ecoScore, scoreHistory } = useEcosystem();
@@ -32,7 +33,13 @@ export default function EcoScore() {
   };
 
   return (
-    <div className="absolute top-4 right-4 pointer-events-auto">
+    <Draggable
+      defaultPosition={{ x: 0, y: 0 }}
+      bounds={typeof window !== 'undefined' ? { top: 0, left: 0, right: window.innerWidth - 256, bottom: window.innerHeight - 200 } : undefined}
+      persistPosition="eco-score"
+      dragHandleClassName="drag-handle"
+      className="top-4 right-4 pointer-events-auto"
+    >
       <Card className="bg-black/80 text-white border-gray-600 backdrop-blur-sm w-64">
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-4">
@@ -41,6 +48,7 @@ export default function EcoScore() {
               <span className="font-semibold">Eco Score</span>
             </div>
             <div className="flex items-center gap-1">
+              <DragHandle className="drag-handle" />
               {trend > 0 ? (
                 <TrendingUp className="w-4 h-4 text-green-400" />
               ) : trend < 0 ? (
@@ -87,6 +95,6 @@ export default function EcoScore() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </Draggable>
   );
 }
