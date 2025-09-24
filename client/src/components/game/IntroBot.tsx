@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronLeft, Bot, X, Lightbulb, BookOpen, Target } from "lucide-react";
+import { ChevronRight, ChevronLeft, Bot, X, Lightbulb, BookOpen, Target, Sparkles } from "lucide-react";
 import { useCountries } from "@/lib/stores/useCountries";
 import { useUI } from "@/lib/stores/useUI";
+import { aiService } from "@/lib/ai-service";
 
 interface TutorialStep {
   id: number;
@@ -58,6 +59,9 @@ export default function IntroBot() {
     // Check localStorage to see if user has seen intro before
     return localStorage.getItem('ecoisle-intro-seen') === 'true';
   });
+  const [isAIMode, setIsAIMode] = useState(false);
+  const [aiResponse, setAiResponse] = useState<any>(null);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { selectedCountry } = useCountries();
   const { ecoAssistantOffset } = useUI();
 
@@ -83,6 +87,8 @@ export default function IntroBot() {
   const closeTutorial = () => {
     setIsOpen(false);
     setHasSeenIntro(true);
+    setIsAIMode(false);
+    setAiResponse(null);
     // Save to localStorage so it persists across page reloads
     localStorage.setItem('ecoisle-intro-seen', 'true');
   };
@@ -90,6 +96,35 @@ export default function IntroBot() {
   const reopenTutorial = () => {
     setIsOpen(true);
     setCurrentStep(0);
+    setIsAIMode(false);
+    setAiResponse(null);
+  };
+
+  const getAITutorialHelp = async () => {
+    setIsLoadingAI(true);
+    try {
+      const contextualPrompt = aiService.createContextualPrompt('tutorial', 
+        `Tutorial step: ${currentStepData.title}. Content: ${currentStepData.content}. Country: ${selectedCountry}`
+      );
+
+      const response = await aiService.getRecommendation({
+        ecosystemState: { foodChain: 50, resources: 50, humanActivity: 50, ecoScore: 50 },
+        country: selectedCountry || 'Unknown',
+        userMessage: contextualPrompt,
+        allowTools: false
+      });
+
+      setAiResponse(response);
+      setIsAIMode(true);
+    } catch (error) {
+      console.error('Failed to get AI tutorial help:', error);
+      setAiResponse({
+        success: false,
+        error: 'Failed to get AI help. Please try again.'
+      });
+      setIsAIMode(true);
+    }
+    setIsLoadingAI(false);
   };
 
   const currentStepData = tutorialSteps[currentStep];
@@ -135,83 +170,136 @@ export default function IntroBot() {
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <CardHeader className="relative">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={closeTutorial}
-                className="absolute right-2 top-2"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <IconComponent className="w-5 h-5 text-blue-600" />
-                {currentStepData.title}
+              <div className="absolute right-2 top-2 flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={getAITutorialHelp}
+                  disabled={isLoadingAI}
+                  className="h-8 w-8 hover:bg-purple-100"
+                  title="Get AI help with this tutorial step"
+                >
+                  {isLoadingAI ? (
+                    <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 text-purple-600" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={closeTutorial}
+                  className="h-8 w-8"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <CardTitle className="flex items-center gap-2 text-lg pr-20">
+                {isAIMode ? (
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                ) : (
+                  <IconComponent className="w-5 h-5 text-blue-600" />
+                )}
+                {isAIMode ? "AI Tutorial Helper" : currentStepData.title}
               </CardTitle>
             </CardHeader>
             
             <CardContent className="space-y-4">
-              <div className="text-gray-700 leading-relaxed">
-                {currentStepData.content}
-              </div>
+              {isAIMode && aiResponse ? (
+                <div className="space-y-3">
+                  {aiResponse.success ? (
+                    <div className="text-gray-700 leading-relaxed">
+                      {aiResponse.message}
+                    </div>
+                  ) : (
+                    <div className="text-red-600 text-sm">
+                      {aiResponse.error || "Failed to get AI help"}
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setIsAIMode(false);
+                        setAiResponse(null);
+                      }}
+                      className="text-xs"
+                    >
+                      Back to Tutorial
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-gray-700 leading-relaxed">
+                    {currentStepData.content}
+                  </div>
 
-              {/* Country-specific tip for step 4 */}
-              {currentStep === 3 && selectedCountry && (
-                <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
-                  <div className="font-medium text-blue-900">
-                    {selectedCountry} Tip:
-                  </div>
-                  <div className="text-blue-700 text-sm mt-1">
-                    {selectedCountry === "USA" && "Focus on reducing human activity while maintaining economic growth."}
-                    {selectedCountry === "Brazil" && "Balance resource extraction with biodiversity preservation."}
-                    {selectedCountry === "Norway" && "Leverage renewable energy and sustainable fishing practices."}
-                    {selectedCountry === "Japan" && "Manage urban density while protecting marine ecosystems."}
-                    {selectedCountry === "Kenya" && "Address wildlife-human conflict while promoting conservation."}
-                  </div>
+                  {/* Country-specific tip for step 4 */}
+                  {currentStep === 3 && selectedCountry && (
+                    <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
+                      <div className="font-medium text-blue-900">
+                        {selectedCountry} Tip:
+                      </div>
+                      <div className="text-blue-700 text-sm mt-1">
+                        {selectedCountry === "USA" && "Focus on reducing human activity while maintaining economic growth."}
+                        {selectedCountry === "Brazil" && "Balance resource extraction with biodiversity preservation."}
+                        {selectedCountry === "Norway" && "Leverage renewable energy and sustainable fishing practices."}
+                        {selectedCountry === "Japan" && "Manage urban density while protecting marine ecosystems."}
+                        {selectedCountry === "Kenya" && "Address wildlife-human conflict while promoting conservation."}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Progress indicator - only show when not in AI mode */}
+              {!isAIMode && (
+                <div className="flex justify-center gap-2">
+                  {tutorialSteps.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full ${
+                        index === currentStep ? 'bg-blue-600' : 'bg-gray-300'
+                      }`}
+                    />
+                  ))}
                 </div>
               )}
 
-              {/* Progress indicator */}
-              <div className="flex justify-center gap-2">
-                {tutorialSteps.map((_, index) => (
-                  <div
-                    key={index}
-                    className={`w-2 h-2 rounded-full ${
-                      index === currentStep ? 'bg-blue-600' : 'bg-gray-300'
-                    }`}
-                  />
-                ))}
-              </div>
-
-              {/* Navigation buttons */}
-              <div className="flex justify-between pt-4">
-                <Button
-                  variant="outline"
-                  onClick={prevStep}
-                  disabled={currentStep === 0}
-                  className="flex items-center gap-2"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Button>
-
-                {currentStep === tutorialSteps.length - 1 ? (
+              {/* Navigation buttons - only show when not in AI mode */}
+              {!isAIMode && (
+                <div className="flex justify-between pt-4">
                   <Button
-                    onClick={closeTutorial}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
-                  >
-                    Start Playing!
-                    <Target className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={nextStep}
+                    variant="outline"
+                    onClick={prevStep}
+                    disabled={currentStep === 0}
                     className="flex items-center gap-2"
                   >
-                    Next
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
                   </Button>
-                )}
-              </div>
+
+                  {currentStep === tutorialSteps.length - 1 ? (
+                    <Button
+                      onClick={closeTutorial}
+                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                    >
+                      Start Playing!
+                      <Target className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={nextStep}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
