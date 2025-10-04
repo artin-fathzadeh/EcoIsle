@@ -42,11 +42,11 @@ export default function CountrySelector() {
   };
 
   return (
-    <div className="absolute top-4 left-4 pointer-events-auto">
-      <Card className="bg-black/90 text-white border-gray-600 backdrop-blur-sm max-w-md">
+    <div className="fixed top-4 left-4 pointer-events-auto z-40">
+      <Card className="bg-black/80 text-white border-gray-700 backdrop-blur-sm rounded-2xl max-w-md">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-blue-400" />
+            <Globe className="w-5 h-5 text-gray-300" />
             Select a Country
           </CardTitle>
         </CardHeader>
@@ -98,16 +98,16 @@ export default function CountrySelector() {
                     variant="ghost"
                     onClick={() => getCountryAIInfo(country.name)}
                     disabled={isLoadingAI}
-                    className="text-xs text-purple-300 hover:text-purple-200 hover:bg-purple-900/30"
+                    className="text-xs text-gray-300 hover:text-white hover:bg-white/10 rounded-full"
                   >
                     {isLoadingAI && selectedForAI === country.name ? (
                       <>
-                        <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mr-1" />
+                        <div className="w-3 h-3 border-2 border-gray-300 border-t-transparent rounded-full animate-spin mr-1" />
                         Loading AI Info...
                       </>
                     ) : (
                       <>
-                        <Sparkles className="w-3 h-3 mr-1" />
+                        <Sparkles className="w-3 h-3 mr-1 text-gray-300" />
                         AI Country Info
                       </>
                     )}
@@ -116,9 +116,9 @@ export default function CountrySelector() {
                 
                 {/* AI Response */}
                 {selectedForAI === country.name && aiResponse && (
-                  <div className="bg-purple-900/30 border border-purple-600 rounded-lg p-3 text-sm">
+                  <div className="bg-white/5 border border-gray-700 rounded-lg p-3 text-sm">
                     {aiResponse.success ? (
-                      <div className="text-purple-100">
+                      <div className="text-gray-200">
                         {aiResponse.message}
                       </div>
                     ) : (
@@ -133,7 +133,7 @@ export default function CountrySelector() {
                         setSelectedForAI(null);
                         setAiResponse(null);
                       }}
-                      className="text-xs text-purple-300 hover:text-purple-200 mt-2"
+                      className="text-xs text-gray-300 hover:text-white mt-2 hover:bg-white/10 rounded-full"
                     >
                       Close
                     </Button>

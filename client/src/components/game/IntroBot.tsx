@@ -1,9 +1,12 @@
+// ⚠️ CRITICAL: This component uses x-ai/grok-4-fast:free AI model - DO NOT CHANGE
+// The AI model is configured in server/ai-service.ts and MUST remain 'x-ai/grok-4-fast:free'
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ChevronLeft, Bot, X, Lightbulb, BookOpen, Target, Sparkles } from "lucide-react";
 import { useCountries } from "@/lib/stores/useCountries";
 import { useUI } from "@/lib/stores/useUI";
+// ⚠️ CRITICAL: aiService uses x-ai/grok-4-fast:free - DO NOT CHANGE THE AI MODEL
 import { aiService } from "@/lib/ai-service";
 
 interface TutorialStep {
@@ -100,13 +103,16 @@ export default function IntroBot() {
     setAiResponse(null);
   };
 
+  // ⚠️ CRITICAL: This function uses x-ai/grok-4-fast:free for AI tutorial help - DO NOT CHANGE AI MODEL
   const getAITutorialHelp = async () => {
     setIsLoadingAI(true);
     try {
+      // ⚠️ AI model is x-ai/grok-4-fast:free - DO NOT CHANGE
       const contextualPrompt = aiService.createContextualPrompt('tutorial', 
         `Tutorial step: ${currentStepData.title}. Content: ${currentStepData.content}. Country: ${selectedCountry}`
       );
 
+      // ⚠️ AI model is x-ai/grok-4-fast:free - DO NOT CHANGE
       const response = await aiService.getRecommendation({
         ecosystemState: { foodChain: 50, resources: 50, humanActivity: 50, ecoScore: 50 },
         country: selectedCountry || 'Unknown',
@@ -137,7 +143,7 @@ export default function IntroBot() {
       {/* Tutorial Modal */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 pointer-events-auto"
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 pointer-events-auto"
           onWheel={(e: React.WheelEvent) => {
             e.preventDefault();
             e.stopPropagation();
@@ -166,7 +172,7 @@ export default function IntroBot() {
           }}
         >
           <Card 
-            className="w-full max-w-lg bg-white shadow-xl"
+            className="w-full max-w-lg bg-black/85 text-white border border-gray-700 rounded-2xl shadow-xl backdrop-blur-md"
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             <CardHeader className="relative">
@@ -176,31 +182,31 @@ export default function IntroBot() {
                   size="icon"
                   onClick={getAITutorialHelp}
                   disabled={isLoadingAI}
-                  className="h-8 w-8 hover:bg-purple-100"
+                  className="h-8 w-8 hover:bg-white/10 text-white"
                   title="Get AI help with this tutorial step"
                 >
                   {isLoadingAI ? (
-                    <div className="w-3 h-3 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-3 h-3 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <Sparkles className="w-4 h-4 text-purple-600" />
+                    <Sparkles className="w-4 h-4 text-gray-200" />
                   )}
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={closeTutorial}
-                  className="h-8 w-8"
+                  className="h-8 w-8 hover:bg-white/10 text-white"
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
               <CardTitle className="flex items-center gap-2 text-lg pr-20">
                 {isAIMode ? (
-                  <Sparkles className="w-5 h-5 text-purple-600" />
+                  <Sparkles className="w-5 h-5 text-gray-200" />
                 ) : (
-                  <IconComponent className="w-5 h-5 text-blue-600" />
+                  <IconComponent className="w-5 h-5 text-gray-300" />
                 )}
-                {isAIMode ? "AI Tutorial Helper" : currentStepData.title}
+                <span className="text-white">{isAIMode ? "AI Tutorial Helper" : currentStepData.title}</span>
               </CardTitle>
             </CardHeader>
             
@@ -208,11 +214,11 @@ export default function IntroBot() {
               {isAIMode && aiResponse ? (
                 <div className="space-y-3">
                   {aiResponse.success ? (
-                    <div className="text-gray-700 leading-relaxed">
+                    <div className="text-gray-200 leading-relaxed">
                       {aiResponse.message}
                     </div>
                   ) : (
-                    <div className="text-red-600 text-sm">
+                    <div className="text-red-300 text-sm">
                       {aiResponse.error || "Failed to get AI help"}
                     </div>
                   )}
@@ -224,7 +230,7 @@ export default function IntroBot() {
                         setIsAIMode(false);
                         setAiResponse(null);
                       }}
-                      className="text-xs"
+                      className="text-xs border border-gray-600 text-white hover:bg-white/10 rounded-full"
                     >
                       Back to Tutorial
                     </Button>
@@ -232,17 +238,17 @@ export default function IntroBot() {
                 </div>
               ) : (
                 <>
-                  <div className="text-gray-700 leading-relaxed">
+                  <div className="text-gray-200 leading-relaxed">
                     {currentStepData.content}
                   </div>
 
                   {/* Country-specific tip for step 4 */}
                   {currentStep === 3 && selectedCountry && (
-                    <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-400">
-                      <div className="font-medium text-blue-900">
+                    <div className="bg-white/5 p-3 rounded-lg border border-gray-600">
+                      <div className="font-medium text-white">
                         {selectedCountry} Tip:
                       </div>
-                      <div className="text-blue-700 text-sm mt-1">
+                      <div className="text-gray-200 text-sm mt-1">
                         {selectedCountry === "USA" && "Focus on reducing human activity while maintaining economic growth."}
                         {selectedCountry === "Brazil" && "Balance resource extraction with biodiversity preservation."}
                         {selectedCountry === "Norway" && "Leverage renewable energy and sustainable fishing practices."}

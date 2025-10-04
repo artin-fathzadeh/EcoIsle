@@ -24,12 +24,11 @@ export default function EcosystemControls() {
   return (
     <Draggable
       defaultPosition={{ x: 0, y: 0 }}
-      bounds={typeof window !== 'undefined' ? { top: 0, left: 0, right: window.innerWidth - 320, bottom: window.innerHeight - 200 } : undefined}
       persistPosition="ecosystem-controls"
       dragHandleClassName="drag-handle"
-      className="bottom-4 left-4 pointer-events-auto"
+      className="top-4 left-4 pointer-events-auto"
     >
-      <Card className="bg-black/80 text-white border-gray-600 backdrop-blur-sm w-80">
+  <Card className="bg-black/70 text-white border-gray-600 backdrop-blur-sm rounded-2xl w-80">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center justify-between">
             Ecosystem Controls

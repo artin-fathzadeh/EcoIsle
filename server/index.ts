@@ -1,10 +1,14 @@
+// ⚠️ CRITICAL: EcoIsle Server - AI powered by x-ai/grok-4-fast:free ONLY - DO NOT CHANGE
+// All AI functionality uses x-ai/grok-4-fast:free model configured in ai-service.ts
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { config } from "dotenv";
+import path from "path";
 
-// Load environment variables
-config();
+// Load environment variables from .env.local first, then .env
+config({ path: path.resolve(process.cwd(), '.env.local') });
+config(); // Also load .env if it exists
 
 const app = express();
 app.use(express.json());

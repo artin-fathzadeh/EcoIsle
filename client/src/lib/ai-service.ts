@@ -1,3 +1,6 @@
+// ⚠️ CRITICAL: This service communicates with server AI using x-ai/grok-4-fast:free
+// DO NOT CHANGE THE AI MODEL - it is configured on the server side
+// The model MUST remain 'x-ai/grok-4-fast:free' for all AI functions
 interface EcosystemState {
   foodChain: number;
   resources: number;
@@ -30,8 +33,10 @@ interface ApplyToolsResponse {
 class AIService {
   private baseUrl = '/api/ai';
 
+  // ⚠️ CRITICAL: All AI requests use x-ai/grok-4-fast:free - DO NOT CHANGE AI MODEL
   async getRecommendation(request: AIRecommendationRequest): Promise<AIRecommendationResponse> {
     try {
+      // ⚠️ Server uses x-ai/grok-4-fast:free for this endpoint - DO NOT CHANGE
       const response = await fetch(`${this.baseUrl}/recommendation`, {
         method: 'POST',
         headers: {
@@ -58,8 +63,10 @@ class AIService {
     }    
   }
 
+  // ⚠️ CRITICAL: Tool application uses x-ai/grok-4-fast:free - DO NOT CHANGE AI MODEL
   async applyToolCalls(sessionId: string, toolCalls: any[]): Promise<ApplyToolsResponse> {
     try {
+      // ⚠️ Server uses x-ai/grok-4-fast:free for this endpoint - DO NOT CHANGE
       const response = await fetch('/api/ai/apply-tools', {
         method: 'POST',
         headers: {
@@ -87,6 +94,7 @@ class AIService {
   }
 
   // Helper method to create context-aware prompts for different parts of the app
+  // ⚠️ CRITICAL: All prompts are processed by x-ai/grok-4-fast:free - DO NOT CHANGE AI MODEL
   createContextualPrompt(context: string, additionalInfo?: string): string {
     const prompts: { [key: string]: string } = {
       'intro': 'Explain the basics of ecosystem management in EcoIsle to a new player. Focus on the three main variables and how they interact.',

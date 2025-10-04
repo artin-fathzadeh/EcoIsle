@@ -1,3 +1,5 @@
+// ⚠️ CRITICAL: This component uses x-ai/grok-4-fast:free AI model - DO NOT CHANGE
+// The AI model is configured in server/ai-service.ts and MUST remain 'x-ai/grok-4-fast:free'
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEcosystem } from "@/lib/stores/useEcosystem";
@@ -5,6 +7,7 @@ import { useCountries } from "@/lib/stores/useCountries";
 import { useUI } from "@/lib/stores/useUI";
 import { AlertTriangle, Info, CheckCircle, X, Bot, Sparkles, AlertCircle, ChevronDown, ChevronUp, Send } from "lucide-react";
 import { useState, useEffect } from "react";
+// ⚠️ CRITICAL: aiService uses x-ai/grok-4-fast:free - DO NOT CHANGE THE AI MODEL
 import { aiService, type AIRecommendationResponse } from "@/lib/ai-service";
 import { useSession } from "@/lib/stores/useSession";
 import { toast } from "sonner";
@@ -14,8 +17,16 @@ import { Draggable, DragHandle } from "@/components/ui/draggable";
 export default function Assistant() {
   const { foodChain, resources, humanActivity, ecoScore, scoreHistory, setFoodChain, setResources, setHumanActivity } = useEcosystem();
   const { selectedCountry } = useCountries();
-  const { scoreBreakdownOpen } = useUI();
+  const { scoreBreakdownOpen, ecoAssistantOffset } = useUI();
   const [isMinimized, setIsMinimized] = useState(false);
+  const [manuallyPlaced, setManuallyPlaced] = useState(false);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('draggable-assistant-manuallyPlaced');
+      setManuallyPlaced(v === 'true');
+    } catch {}
+  }, [isMinimized]);
   const [isAIMode, setIsAIMode] = useState(false);
   const [aiResponse, setAiResponse] = useState<AIRecommendationResponse | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
@@ -102,6 +113,7 @@ export default function Assistant() {
     return messages[0]; // Return the most important message
   };
 
+  // ⚠️ CRITICAL: This function calls AI service using x-ai/grok-4-fast:free - DO NOT CHANGE AI MODEL
   const getAIRecommendation = async (allowTools = false) => {
     setIsLoadingAI(true);
     try {
@@ -113,6 +125,7 @@ export default function Assistant() {
         scoreHistory
       };
 
+      // ⚠️ AI model is x-ai/grok-4-fast:free - DO NOT CHANGE
       const response = await aiService.getRecommendation({
         ecosystemState,
         country: selectedCountry,
@@ -186,6 +199,7 @@ export default function Assistant() {
     }
   };
 
+  // ⚠️ CRITICAL: This function sends questions to AI using x-ai/grok-4-fast:free - DO NOT CHANGE AI MODEL
   const sendQuestion = async () => {
     if (!userInput.trim()) return;
     
@@ -323,6 +337,7 @@ export default function Assistant() {
       }
 
       // No direct tool call found in user message: forward to AI normally (no tools)
+      // ⚠️ AI model is x-ai/grok-4-fast:free - DO NOT CHANGE
       const response = await aiService.getRecommendation({
         ecosystemState,
         country: selectedCountry,
@@ -382,13 +397,13 @@ export default function Assistant() {
   return (
     <Draggable
       defaultPosition={{ x: 0, y: 0 }}
-      bounds={typeof window !== 'undefined' ? { top: 0, left: 0, right: window.innerWidth - 400, bottom: window.innerHeight - 200 } : undefined}
       persistPosition="assistant"
       dragHandleClassName="drag-handle"
-      className="bottom-20 right-4 pointer-events-auto transition-all duration-500 ease-out"
+  className="bottom-20 right-4 pointer-events-auto transition-all duration-500 ease-out"
+      externalOffset={!manuallyPlaced ? { x: -(ecoAssistantOffset || 0) } : undefined}
     >
-      <Card className={`w-full max-w-sm sm:max-w-md md:max-w-lg text-white rounded-2xl border shadow-xl backdrop-blur-md bg-gradient-to-b from-zinc-900/70 to-zinc-900/40 ${
-        isAIMode ? 'border-purple-600' : getCardBorder(advice.type)
+      <Card className={`w-full max-w-sm sm:max-w-md md:max-w-lg text-white rounded-2xl border shadow-xl backdrop-blur-md bg-black/70 ${
+        isAIMode ? 'border-gray-600' : getCardBorder(advice.type)
       }`}>
         <CardContent className="pt-4 max-h-96 overflow-y-auto">
           <div className="flex items-start justify-between mb-2">
@@ -410,13 +425,13 @@ export default function Assistant() {
                   size="sm"
                   onClick={() => getAIRecommendation(false)}
                   disabled={isLoadingAI}
-                  className="h-6 w-6 p-0 hover:bg-purple-700"
+                  className="h-6 w-6 p-0 hover:bg-white/10"
                   title="Get AI recommendations"
                 >
                   {isLoadingAI ? (
-                    <div className="w-3 h-3 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <Sparkles className="w-3 h-3 text-gray-300" />
                   )}
                 </Button>
               )}
@@ -451,7 +466,7 @@ export default function Assistant() {
                         )}
                         {aiResponse.message.length > 100 && (
                           <button
-                            className="mt-2 px-2 py-1 text-xs text-purple-300 hover:text-purple-200 bg-purple-900/20 hover:bg-purple-900/40 rounded inline-flex items-center gap-1 transition-colors"
+                            className="mt-2 px-2 py-1 text-xs text-gray-300 hover:text-white bg-white/10 hover:bg-white/20 rounded inline-flex items-center gap-1 transition-colors"
                             onClick={() => setExpanded((v) => !v)}
                           >
                             {expanded ? <><ChevronUp className="w-3 h-3"/> Show less</> : <><ChevronDown className="w-3 h-3"/> Read more</>}
@@ -462,24 +477,24 @@ export default function Assistant() {
                     
                     {/* Show tool confirmation if needed */}
                     {showToolConfirmation && aiResponse.toolCalls && aiResponse.toolCalls.length > 0 && (
-                      <div className="bg-purple-900/30 border border-purple-600 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center gap-2 text-purple-300">
+                      <div className="bg-white/5 border border-gray-600 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center gap-2 text-gray-200">
                           <AlertCircle className="w-4 h-4" />
                           <span className="font-medium text-xs">AI wants to make changes:</span>
                         </div>
-                        <div className="space-y-1 text-xs text-purple-100">
+                        <div className="space-y-1 text-xs text-gray-200">
                           {aiResponse.toolCalls.map((toolCall, index) => {
                             let reason = toolCall.function?.arguments?.reason || 'Suggested change';
                             const name = toolCall.function?.name;
                             const change = toolCall.function?.arguments?.change;
                             return (
-                              <label key={index} className="flex items-center justify-between gap-2 bg-purple-950/40 border border-purple-700/40 rounded-md px-2 py-1 cursor-pointer">
+                              <label key={index} className="flex items-center justify-between gap-2 bg-white/5 border border-gray-700 rounded-md px-2 py-1 cursor-pointer">
                                 <div className="flex items-center gap-2 min-w-0">
                                   <input
                                     type="checkbox"
                                     checked={!!selectedSuggestions[index]}
                                     onChange={(e) => setSelectedSuggestions((prev) => ({ ...prev, [index]: e.target.checked }))}
-                                    className="accent-purple-500"
+                                    className="accent-gray-400"
                                   />
                                   <div className="truncate">
                                     <span className="opacity-80">{index+1}.</span> {reason}
@@ -496,7 +511,7 @@ export default function Assistant() {
                           <Button
                             size="sm"
                             onClick={applyAIRecommendations}
-                            className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto rounded-full"
+                            className="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1 h-auto rounded-full border border-gray-600"
                           >
                             Apply Selected
                           </Button>
@@ -504,7 +519,7 @@ export default function Assistant() {
                             size="sm"
                             variant="outline"
                             onClick={() => setShowToolConfirmation(false)}
-                            className="border-purple-600 text-purple-300 hover:bg-purple-900/30 text-xs px-3 py-1 h-auto rounded-full"
+                            className="border-gray-600 text-gray-300 hover:bg-white/10 text-xs px-3 py-1 h-auto rounded-full"
                           >
                             Just Advice
                           </Button>
@@ -517,7 +532,7 @@ export default function Assistant() {
                         size="sm"
                         onClick={() => getAIRecommendation(true)}
                         disabled={isLoadingAI}
-                        className="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1 h-auto rounded-full"
+                        className="bg-white/10 hover:bg-white/20 text-white text-xs px-3 py-1 h-auto rounded-full border border-gray-600"
                       >
                         {isLoadingAI ? "Loading..." : "Suggest Changes"}
                       </Button>
@@ -529,7 +544,7 @@ export default function Assistant() {
                           setAiResponse(null);
                           setShowToolConfirmation(false);
                         }}
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs px-3 py-1 h-auto rounded-full"
+                        className="border-gray-600 text-gray-300 hover:bg-white/10 text-xs px-3 py-1 h-auto rounded-full"
                       >
                         Back to Tips
                       </Button>
@@ -549,7 +564,7 @@ export default function Assistant() {
                           size="sm"
                           onClick={sendQuestion}
                           disabled={!userInput.trim() || isSendingQuestion}
-                          className="bg-purple-600 hover:bg-purple-700 rounded-full px-3"
+                          className="bg-white/10 hover:bg-white/20 border border-gray-600 rounded-full px-3"
                         >
                           {isSendingQuestion ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

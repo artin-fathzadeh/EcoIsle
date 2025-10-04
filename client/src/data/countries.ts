@@ -1,5 +1,8 @@
 import type { Country } from "../lib/stores/useCountries";
+import { WORLD_COUNTRIES } from "../lib/expandedCountries";
 
+// Legacy data - now using WORLD_COUNTRIES from expandedCountries.ts
+// This file kept for backward compatibility
 export const COUNTRIES_DATA: Country[] = [
   {
     name: "USA",
@@ -7,9 +10,9 @@ export const COUNTRIES_DATA: Country[] = [
     population: "331M",
     challenges: ["Carbon emissions", "Urban sprawl", "Biodiversity loss"],
     startingConditions: {
-      foodChain: 45, // Slightly unbalanced due to habitat fragmentation
-      resources: 40, // High consumption rate
-      humanActivity: 75, // High urbanization and industrialization
+      foodChain: 45,
+      resources: 40,
+      humanActivity: 75,
     }
   },
   {
@@ -18,9 +21,9 @@ export const COUNTRIES_DATA: Country[] = [
     population: "215M",
     challenges: ["Deforestation", "Mining pressure", "Agricultural expansion"],
     startingConditions: {
-      foodChain: 65, // Rich biodiversity but under pressure
-      resources: 80, // Abundant natural resources
-      humanActivity: 55, // Growing urban development
+      foodChain: 65,
+      resources: 80,
+      humanActivity: 55,
     }
   },
   {
@@ -29,9 +32,9 @@ export const COUNTRIES_DATA: Country[] = [
     population: "5.4M",
     challenges: ["Arctic ice loss", "Oil dependency", "Marine ecosystem stress"],
     startingConditions: {
-      foodChain: 70, // Relatively stable marine ecosystems
-      resources: 90, // Excellent resource management
-      humanActivity: 35, // Low population density, sustainable practices
+      foodChain: 70,
+      resources: 90,
+      humanActivity: 35,
     }
   },
   {
@@ -40,9 +43,9 @@ export const COUNTRIES_DATA: Country[] = [
     population: "125M", 
     challenges: ["Overfishing", "Urban density", "Natural disasters"],
     startingConditions: {
-      foodChain: 40, // Stressed marine food chains
-      resources: 35, // Limited natural resources
-      humanActivity: 85, // Very high urbanization
+      foodChain: 40,
+      resources: 35,
+      humanActivity: 85,
     }
   },
   {
@@ -51,9 +54,28 @@ export const COUNTRIES_DATA: Country[] = [
     population: "54M",
     challenges: ["Drought cycles", "Wildlife conflict", "Soil degradation"],
     startingConditions: {
-      foodChain: 60, // Rich wildlife but migration disrupted
-      resources: 50, // Variable rainfall affects resources
-      humanActivity: 30, // Lower industrialization, more rural
+      foodChain: 60,
+      resources: 50,
+      humanActivity: 30,
     }
   }
 ];
+
+// Convert expanded countries to legacy format for backward compatibility
+export function getCountryData(countryName: string): Country | undefined {
+  const expandedData = WORLD_COUNTRIES[countryName];
+  if (!expandedData) return undefined;
+
+  return {
+    name: countryName,
+    climate: expandedData.climate,
+    population: expandedData.population,
+    challenges: expandedData.challenges,
+    startingConditions: expandedData.startingConditions,
+  };
+}
+
+// Get all available country names
+export function getAllCountryNames(): string[] {
+  return Object.keys(WORLD_COUNTRIES);
+}

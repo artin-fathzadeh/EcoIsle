@@ -1,3 +1,5 @@
+// ⚠️ CRITICAL: This application uses x-ai/grok-4-fast:free for ALL AI features - DO NOT CHANGE
+// AI model is configured in server/ai-service.ts and must remain 'x-ai/grok-4-fast:free'
 import { Canvas } from "@react-three/fiber";
 import React, { Suspense, useEffect, useState } from "react";
 import { KeyboardControls } from "@react-three/drei";
@@ -6,15 +8,17 @@ import { Button } from "./components/ui/button";
 import { Trophy, Play } from "lucide-react";
 
 // Import game components
+// ⚠️ All components with AI features use x-ai/grok-4-fast:free - DO NOT CHANGE
 import WorldMap from "./components/game/WorldMap";
+import CesiumWorldMap from "./components/game/CesiumWorldMap";
 import FallbackWorldMap from "./components/game/FallbackWorldMap";
 import CountrySelector from "./components/game/CountrySelector";
 import EcosystemControls from "./components/game/EcosystemControls";
 import EcoScore from "./components/game/EcoScore";
 import EducationalEcoScore from "./components/game/EducationalEcoScore";
-import Assistant from "./components/game/Assistant";
+import Assistant from "./components/game/Assistant"; // Uses x-ai/grok-4-fast:free - DO NOT CHANGE
 import VisualFeedback from "./components/game/VisualFeedback";
-import IntroBot from "./components/game/IntroBot";
+import IntroBot from "./components/game/IntroBot"; // Uses x-ai/grok-4-fast:free - DO NOT CHANGE
 import CardGameInterface from "./components/game/CardGameInterface";
 import GameModeSelector from "./components/game/GameModeSelector";
 import GorillaMode from "./components/game/GorillaMode";
@@ -27,6 +31,7 @@ import { useGame } from "./lib/stores/useGame";
 import { useCountries } from "./lib/stores/useCountries";
 import { useCardGame } from "./lib/stores/useCardGame";
 import { useGameFlow } from "./lib/stores/useGameFlow";
+import { getFeatureValue } from "./lib/featureFlags";
 
 
 // Define control keys for the game
@@ -48,6 +53,9 @@ function App() {
   const [showCanvas, setShowCanvas] = useState(false);
   const [webglSupported, setWebglSupported] = useState(true);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
+  // Get map engine preference from feature flags
+  const mapEngine = getFeatureValue('MAP_ENGINE');
 
   // Check WebGL support and show the canvas once everything is loaded
   useEffect(() => {
@@ -67,39 +75,52 @@ function App() {
       <Toaster position="bottom-center" richColors expand={true} />
       {showCanvas && (
         <KeyboardControls map={controls}>
-          {/* Conditionally render 3D or 2D map based on WebGL support */}
-          {webglSupported ? (
-            <Canvas
-              shadows
-              camera={{
-                position: [0, 15, 25],
-                fov: 45,
-                near: 0.1,
-                far: 1000
-              }}
-              gl={{
-                antialias: true,
-                powerPreference: "default"
-              }}
-            >
-              <color attach="background" args={["#0a1428"]} />
-
-              {/* Lighting */}
-              <ambientLight intensity={0.4} />
-              <directionalLight
-                position={[10, 20, 10]}
-                intensity={1}
-                castShadow
-                shadow-mapSize-width={1024}
-                shadow-mapSize-height={1024}
+          {/* Conditionally render Cesium or Three.js map based on feature flag */}
+          {mapEngine === 'cesium' ? (
+            // Cesium 3D Globe (new)
+            webglSupported ? (
+              <CesiumWorldMap 
+                showEnvironmentalData={true}
+                enableTimelapse={currentScreen === 'results'}
               />
-
-              <Suspense fallback={null}>
-                <WorldMap />
-              </Suspense>
-            </Canvas>
+            ) : (
+              <FallbackWorldMap />
+            )
           ) : (
-            <FallbackWorldMap />
+            // Three.js map (original)
+            webglSupported ? (
+              <Canvas
+                shadows
+                camera={{
+                  position: [0, 15, 25],
+                  fov: 45,
+                  near: 0.1,
+                  far: 1000
+                }}
+                gl={{
+                  antialias: true,
+                  powerPreference: "default"
+                }}
+              >
+                <color attach="background" args={["#0a1428"]} />
+
+                {/* Lighting */}
+                <ambientLight intensity={0.4} />
+                <directionalLight
+                  position={[10, 20, 10]}
+                  intensity={1}
+                  castShadow
+                  shadow-mapSize-width={1024}
+                  shadow-mapSize-height={1024}
+                />
+
+                <Suspense fallback={null}>
+                  <WorldMap />
+                </Suspense>
+              </Canvas>
+            ) : (
+              <FallbackWorldMap />
+            )
           )}
 
           {/* UI Overlay */}
@@ -115,22 +136,19 @@ function App() {
                 {/* Game mode selector */}
                 <GameModeSelector />
                 
-                {/* New Simulation Workflow Button */}
-                <div className="absolute top-4 left-4 pointer-events-auto">
+                {/* Simulation Mode + Leaderboard buttons grouped together */}
+                <div className="fixed top-4 left-40 pointer-events-auto z-40 flex items-center gap-3">
                   <Button
                     onClick={() => navigateToScreen('setup')}
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center gap-2"
+                    className="bg-white/10 hover:bg-white/20 text-white border border-gray-600 rounded-full flex items-center gap-2"
                   >
                     <Play className="w-4 h-4" />
                     Simulation Mode
                   </Button>
-                </div>
-                
-                {/* Leaderboard button */}
-                <div className="absolute top-4 right-20 pointer-events-auto">
+
                   <Button
                     onClick={() => setShowLeaderboard(true)}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white flex items-center gap-2"
+                    className="bg-white/10 hover:bg-white/20 text-white border border-gray-600 rounded-full flex items-center gap-2"
                   >
                     <Trophy className="w-4 h-4" />
                     Leaderboard

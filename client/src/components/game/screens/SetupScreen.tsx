@@ -26,10 +26,10 @@ export default function SetupScreen() {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
-      className="fixed inset-0 z-20 bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm"
+      className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm"
     >
       <div className="flex items-center justify-center min-h-screen p-4">
-        <Card className="w-full max-w-2xl bg-black/80 text-white border-gray-600 backdrop-blur-md">
+        <Card className="w-full max-w-2xl bg-black/85 text-white border-gray-700 rounded-2xl backdrop-blur-md">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-3 mb-2">
               <Settings className="w-6 h-6 text-blue-400" />
@@ -144,7 +144,7 @@ export default function SetupScreen() {
               <Button
                 onClick={handleStartSimulation}
                 size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-3 text-lg font-medium"
+                className="bg-white/10 hover:bg-white/20 text-white px-8 py-3 text-lg font-medium rounded-full border border-gray-600"
               >
                 <PlayCircle className="w-5 h-5 mr-2" />
                 Start Ecosystem Simulation

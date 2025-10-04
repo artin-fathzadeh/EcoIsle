@@ -1,0 +1,61 @@
+/**
+ * Cesium Map Custom Styling
+ * Ensures the Cesium viewer integrates seamlessly with EcoIsle's dark theme
+ */
+
+/* Hide Cesium branding and default UI elements */
+.cesium-viewer-bottom {
+  display: none !important;
+}
+
+.cesium-credit-logoContainer {
+  display: none !important;
+}
+
+.cesium-credit-textContainer {
+  display: none !important;
+}
+
+/* Style the Cesium canvas container */
+.cesium-container {
+  background: #0a1428;
+}
+
+.cesium-viewer {
+  background: #0a1428;
+}
+
+.cesium-widget {
+  background: #0a1428;
+}
+
+.cesium-widget-canvas {
+  outline: none;
+}
+
+/* Ensure smooth cursor transitions */
+.cesium-widget canvas {
+  cursor: default;
+  transition: cursor 0.2s ease;
+}
+
+/* Custom entity label styling for dark theme */
+.cesium-infoBox {
+  background: rgba(10, 20, 40, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.cesium-infoBox-title {
+  background: rgba(74, 144, 226, 0.3);
+  color: white;
+}
+
+/* Performance: GPU acceleration */
+.cesium-viewer,
+.cesium-widget,
+.cesium-widget-canvas {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
+}

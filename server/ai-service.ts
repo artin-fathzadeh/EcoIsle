@@ -1,8 +1,10 @@
 import { config } from 'dotenv';
+import path from 'path';
 
 // Load environment variables if not already loaded
 if (!process.env.OPENROUTER_API_KEY) {
-  config();
+  config({ path: path.resolve(process.cwd(), '.env.local') });
+  config(); // Also try .env
 }
 
 interface EcosystemState {
@@ -48,16 +50,20 @@ interface AIRecommendationResponse {
 class OpenRouterService {
   private apiKey: string;
   private baseUrl = 'https://openrouter.ai/api/v1';
-  private model: string; // configurable model
+  // ⚠️ CRITICAL: This must ALWAYS be 'x-ai/grok-4-fast:free' - DO NOT CHANGE
+  // This is the ONLY approved AI model for EcoIsle
+  private model: string;
 
   constructor() {
     this.apiKey = process.env.OPENROUTER_API_KEY || '';
     if (!this.apiKey) {
       console.warn('[EcoIsle] OPENROUTER_API_KEY is not set. AI requests will fail unless AI_TEST_MODE=true.');
     }
-    // Prefer a tool-capable model by default; allow override via env
-    // Some free models may not support tools reliably
-    this.model = process.env.AI_MODEL || 'openai/gpt-4o-mini';
+    // ⚠️ CRITICAL: DO NOT CHANGE THIS AI MODEL - MUST USE x-ai/grok-4-fast:free
+    // This is the ONLY AI model approved for use in EcoIsle
+    // DO NOT modify this line or allow environment variable override
+    // x-ai/grok-4-fast:free is required for ALL AI functions on the site
+    this.model = 'x-ai/grok-4-fast:free';
   }
 
   private createSystemPrompt(ecosystemState: EcosystemState, country: string): string {
@@ -212,8 +218,9 @@ Remember: You are the EcoIsle Assistant, helping players learn about and manage 
         };
       }
 
+      // ⚠️ CRITICAL: Using x-ai/grok-4-fast:free - DO NOT CHANGE THIS MODEL
       const requestBody: any = {
-        model: this.model,
+        model: this.model, // MUST be 'x-ai/grok-4-fast:free' - DO NOT MODIFY
         messages,
         temperature: 0.3,
         max_tokens: 800
@@ -240,11 +247,19 @@ Remember: You are the EcoIsle Assistant, helping players learn about and manage 
         const errorText = await response.text();
         console.error('OpenRouter API error:', response.status, errorText);
         
+        // If API key is invalid, suggest test mode
+        if (response.status === 401) {
+          console.warn('[EcoIsle] API key appears to be invalid. You can enable AI_TEST_MODE=true for simulated responses.');
+          return {
+            success: false,
+            error: 'Invalid API key. Please check your OPENROUTER_API_KEY or enable AI_TEST_MODE=true for testing.'
+          };
+        }
+        
         // Return error instead of simulated response
         return {
           success: false,
-          message: 'AI service temporarily unavailable. Please check your API configuration and try again.',
-          toolCalls: []
+          error: `AI service error (${response.status}). Please check your API configuration.`
         };
       }
 

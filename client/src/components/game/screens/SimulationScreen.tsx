@@ -175,7 +175,7 @@ export default function SimulationScreen() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="bg-black/60 border-blue-500/50 backdrop-blur-md">
+            <Card className="bg-black/70 border-gray-700 backdrop-blur-md rounded-2xl">
               <CardContent className="pt-6">
                 <div className="mb-4">
                   <div className="flex justify-between items-center mb-2">

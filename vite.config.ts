@@ -4,6 +4,7 @@ import path, { dirname } from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { fileURLToPath } from "url";
 import glsl from "vite-plugin-glsl";
+import cesium from "vite-plugin-cesium";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,7 +14,11 @@ export default defineConfig({
     react(),
     // runtimeErrorOverlay(), // Temporarily disabled to check WebSocket issue
     glsl(), // Add GLSL shader support
+    cesium(), // Add Cesium plugin for proper asset handling
   ],
+  define: {
+    CESIUM_BASE_URL: JSON.stringify('/cesium')
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "client", "src"),
@@ -28,6 +33,12 @@ export default defineConfig({
   // Disable HMR to avoid WebSocket issues
   server: {
     hmr: false,
+    fs: {
+      allow: ['..']
+    }
+  },
+  optimizeDeps: {
+    include: ['cesium']
   },
   // Add support for large models and audio files
   assetsInclude: ["**/*.gltf", "**/*.glb", "**/*.mp3", "**/*.ogg", "**/*.wav"],

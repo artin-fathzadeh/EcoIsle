@@ -20,6 +20,8 @@ interface DraggableProps {
   onDragEnd?: (position: { x: number; y: number }) => void;
   disabled?: boolean;
   persistPosition?: string; // localStorage key for persisting position
+  // Optional external offset applied on top of the internal position (not persisted)
+  externalOffset?: { x?: number; y?: number };
 }
 
 export function Draggable({
@@ -32,11 +34,15 @@ export function Draggable({
   onDrag,
   onDragEnd,
   disabled = false,
-  persistPosition
+  persistPosition,
+  externalOffset
 }: DraggableProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState(defaultPosition);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [startRect, setStartRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
+  const [startPosition, setStartPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasDraggedRef = useRef(false);
   const elementRef = useRef<HTMLDivElement>(null);
 
   // Load persisted position on mount
@@ -54,12 +60,7 @@ export function Draggable({
     }
   }, [persistPosition]);
 
-  // Save position when it changes
-  useEffect(() => {
-    if (persistPosition) {
-      localStorage.setItem(`draggable-${persistPosition}`, JSON.stringify(position));
-    }
-  }, [position, persistPosition]);
+  // Do not auto-save on mount; we'll persist only after user drags
 
   const handleMouseDown = (event: React.MouseEvent) => {
     if (disabled) return;
@@ -76,6 +77,12 @@ export function Draggable({
       x: event.clientX - position.x,
       y: event.clientY - position.y
     });
+    setStartPosition({ x: position.x, y: position.y });
+    if (elementRef.current) {
+      const rect = elementRef.current.getBoundingClientRect();
+      setStartRect({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+    }
+    hasDraggedRef.current = false;
     
     onDragStart?.();
   };
@@ -83,26 +90,40 @@ export function Draggable({
   const handleMouseMove = (event: MouseEvent) => {
     if (!isDragging) return;
 
-    let newX = event.clientX - dragStart.x;
-    let newY = event.clientY - dragStart.y;
+  // Compute new transform target based on initial pointer offset
+  const rectNow = elementRef.current?.getBoundingClientRect();
+  const base = startRect || rectNow;
+  if (!base) return;
+
+  const newX = event.clientX - dragStart.x;
+  const newY = event.clientY - dragStart.y;
+
+  // Desired absolute left/top derived from base position + delta transform
+  let desiredLeft = base.left + (newX - startPosition.x);
+  let desiredTop = base.top + (newY - startPosition.y);
 
     // Apply bounds if specified
-    if (bounds && elementRef.current) {
+    if (elementRef.current) {
       const rect = elementRef.current.getBoundingClientRect();
-      
-      if (bounds.left !== undefined) newX = Math.max(bounds.left, newX);
-      if (bounds.right !== undefined) newX = Math.min(bounds.right - rect.width, newX);
-      if (bounds.top !== undefined) newY = Math.max(bounds.top, newY);
-      if (bounds.bottom !== undefined) newY = Math.min(bounds.bottom - rect.height, newY);
-    } else if (typeof window !== 'undefined' && elementRef.current) {
-      // Default bounds to viewport if no custom bounds provided
-      const rect = elementRef.current.getBoundingClientRect();
-      newX = Math.max(0, Math.min(window.innerWidth - rect.width, newX));
-      newY = Math.max(0, Math.min(window.innerHeight - rect.height, newY));
+      const viewportRight = typeof window !== 'undefined' ? window.innerWidth : rect.width;
+      const viewportBottom = typeof window !== 'undefined' ? window.innerHeight : rect.height;
+
+      const minLeft = bounds?.left ?? 0;
+      const maxLeft = (bounds?.right ?? viewportRight) - rect.width;
+      const minTop = bounds?.top ?? 0;
+      const maxTop = (bounds?.bottom ?? viewportBottom) - rect.height;
+
+      desiredLeft = Math.max(minLeft, Math.min(maxLeft, desiredLeft));
+      desiredTop = Math.max(minTop, Math.min(maxTop, desiredTop));
     }
 
-    const newPosition = { x: newX, y: newY };
+  // Convert clamped absolute target back into local transform position
+  const clampedX = startPosition.x + (desiredLeft - (startRect?.left ?? 0));
+  const clampedY = startPosition.y + (desiredTop - (startRect?.top ?? 0));
+
+  const newPosition = { x: clampedX, y: clampedY };
     setPosition(newPosition);
+    hasDraggedRef.current = true;
     onDrag?.(newPosition);
   };
 
@@ -110,6 +131,13 @@ export function Draggable({
     if (!isDragging) return;
     
     setIsDragging(false);
+    // Persist only if user actually moved the window
+    if (persistPosition && hasDraggedRef.current) {
+      try {
+        localStorage.setItem(`draggable-${persistPosition}`, JSON.stringify(position));
+        localStorage.setItem(`draggable-${persistPosition}-manuallyPlaced`, 'true');
+      } catch {}
+    }
     onDragEnd?.(position);
   };
 
@@ -137,7 +165,7 @@ export function Draggable({
         className
       )}
       style={{
-        transform: `translate(${position.x}px, ${position.y}px)`,
+        transform: `translate(${(externalOffset?.x ?? 0) + position.x}px, ${(externalOffset?.y ?? 0) + position.y}px)`,
         transition: isDragging ? 'none' : 'transform 0.2s ease-out'
       }}
       onMouseDown={handleMouseDown}

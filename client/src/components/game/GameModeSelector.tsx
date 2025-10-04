@@ -98,10 +98,10 @@ export default function GameModeSelector() {
   return (
     <>
       {/* Mode selector button */}
-      <div className="absolute top-4 left-4 pointer-events-auto">
+      <div className="fixed top-4 left-4 z-50 pointer-events-auto">
         <Button
           onClick={() => setIsOpen(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+          className="bg-gray-900/70 hover:bg-gray-800/70 text-white border border-gray-600 rounded-full flex items-center gap-2 backdrop-blur-sm"
         >
           <Settings className="w-4 h-4" />
           Game Mode
@@ -140,20 +140,20 @@ export default function GameModeSelector() {
           }}
         >
           <Card 
-            className="bg-gray-900 text-white border-gray-600 w-full max-w-4xl max-h-[90vh]"
+            className="bg-black/85 text-white border-gray-600 rounded-2xl w-full max-w-4xl max-h-[90vh] backdrop-blur-md"
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            <CardHeader className="sticky top-0 bg-gray-900 border-b border-gray-600 z-10">
+            <CardHeader className="sticky top-0 bg-black/80 backdrop-blur-md border-b border-gray-700 z-10 rounded-t-2xl">
               <CardTitle className="flex items-center justify-between text-xl">
                 <div className="flex items-center gap-2">
-                  <Gamepad2 className="w-6 h-6 text-purple-400" />
+                  <Gamepad2 className="w-6 h-6 text-gray-300" />
                   Select Game Mode
                 </div>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setIsOpen(false)}
-                  className="hover:bg-gray-700"
+                  className="hover:bg-white/10 rounded-full"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -184,19 +184,19 @@ export default function GameModeSelector() {
                   return (
                     <Card
                       key={option.mode}
-                      className={`cursor-pointer transition-all duration-200 ${
+                      className={`cursor-pointer transition-all duration-200 rounded-xl ${
                         isSelected 
-                          ? 'border-purple-500 bg-purple-900/20' 
-                          : 'border-gray-600 hover:border-gray-500'
-                      } ${isCurrent ? 'ring-2 ring-green-500' : ''}`}
+                          ? 'border-gray-500 bg-white/5' 
+                          : 'border-gray-600 hover:border-gray-500 bg-black/40'
+                      } ${isCurrent ? 'ring-2 ring-white/30' : ''}`}
                       onClick={() => setSelectedMode(option.mode)}
                     >
                       <CardHeader className="pb-3">
                         <CardTitle className="flex items-center gap-2 text-lg">
-                          <IconComponent className="w-5 h-5 text-purple-400" />
+                          <IconComponent className="w-5 h-5 text-gray-300" />
                           {option.name}
                           {isCurrent && (
-                            <span className="text-xs bg-green-500 text-white px-2 py-1 rounded-full">
+                            <span className="text-xs bg-green-600/90 text-white px-2 py-1 rounded-full">
                               Current
                             </span>
                           )}
@@ -211,7 +211,7 @@ export default function GameModeSelector() {
                           <ul className="text-xs text-gray-300 space-y-1">
                             {option.features.map((feature, index) => (
                               <li key={index} className="flex items-center gap-2">
-                                <div className="w-1 h-1 bg-purple-400 rounded-full" />
+                                <div className="w-1 h-1 bg-gray-400 rounded-full" />
                                 {feature}
                               </li>
                             ))}
@@ -223,12 +223,12 @@ export default function GameModeSelector() {
                 })}
               </div>
               {/* Current country info */}
-              <div className="bg-blue-900/30 p-4 rounded-lg border border-blue-500/30">
+              <div className="bg-white/5 p-4 rounded-xl border border-gray-600">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-blue-400" />
-                  <span className="font-medium text-blue-200">Playing as: {selectedCountry}</span>
+                  <Zap className="w-4 h-4 text-gray-300" />
+                  <span className="font-medium text-gray-200">Playing as: {selectedCountry}</span>
                 </div>
-                <p className="text-blue-100 text-sm">
+                <p className="text-gray-300 text-sm">
                   Each game mode will use {selectedCountry}'s unique environmental challenges and characteristics.
                   {selectedMode === 'cards' && ' Disaster cards will have location-specific effects!'}
                   {selectedMode === 'endless' && ' Perfect for testing your skills against ' + selectedCountry + "'s toughest scenarios!"}
@@ -242,13 +242,14 @@ export default function GameModeSelector() {
                 <Button
                   variant="outline"
                   onClick={() => setIsOpen(false)}
+                  className="border-gray-600 text-gray-200 hover:bg-white/10 rounded-full"
                 >
                   Cancel
                 </Button>
                 
                 <Button
                   onClick={() => handleModeSelect(selectedMode)}
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-gray-600 rounded-full"
                   disabled={gameMode === selectedMode}
                 >
                   {gameMode === selectedMode ? 'Current Mode' : 'Switch Mode'}

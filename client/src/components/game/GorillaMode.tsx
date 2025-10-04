@@ -257,7 +257,7 @@ export default function GorillaMode() {
                 </p>
                 <Button 
                   onClick={startGame}
-                  className="bg-red-600 hover:bg-red-700"
+                  className="bg-white/10 hover:bg-white/20 text-white border border-gray-600 rounded-full"
                   size="lg"
                 >
                   START BATTLE

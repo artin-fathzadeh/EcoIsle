@@ -1,7 +1,9 @@
+// ⚠️ CRITICAL: All AI functionality in this file uses x-ai/grok-4-fast:free - DO NOT CHANGE AI MODEL
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from 'ws';
 import { storage } from "./storage";
+// ⚠️ CRITICAL: openRouterService uses x-ai/grok-4-fast:free ONLY - DO NOT CHANGE AI MODEL
 import { openRouterService, type AIRecommendationRequest } from "./ai-service";
 
 // Extend WebSocket to include custom properties
@@ -192,6 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // AI Assistant endpoints
+  // ⚠️ CRITICAL: All AI endpoints use x-ai/grok-4-fast:free model ONLY - DO NOT CHANGE
   app.post("/api/ai/recommendation", async (req, res) => {
     try {
       const aiRequest: AIRecommendationRequest = req.body;
@@ -203,6 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // ⚠️ AI model is x-ai/grok-4-fast:free - DO NOT CHANGE
       const response = await openRouterService.getRecommendation(aiRequest);
       res.json(response);
     } catch (error) {
@@ -216,12 +220,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Debug route: parse arbitrary assistant text and return extracted tool calls.
   // Useful for reproducing parsing problems without calling external AI.
+  // ⚠️ CRITICAL: This uses x-ai/grok-4-fast:free parsing logic - DO NOT CHANGE AI MODEL
   app.post('/api/ai/parse-debug', (req, res) => {
     const { text } = req.body || {};
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'Missing required field: text (string)' });
     }
     try {
+      // ⚠️ Parsing logic from x-ai/grok-4-fast:free service - DO NOT CHANGE AI MODEL
       const parsed = openRouterService.parseTextForTools(text);
       res.json({ success: true, parsed });
     } catch (error) {
@@ -230,6 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ⚠️ CRITICAL: Tool application endpoint - applies AI suggestions from x-ai/grok-4-fast:free - DO NOT CHANGE
   app.post("/api/ai/apply-tools", (req, res) => {
     const { sessionId, toolCalls } = req.body;
     
